@@ -1296,6 +1296,12 @@ cs.store(
     name="objectgoal_sensor",
     node=ObjectGoalSensorConfig,
 )
+### ADDED
+@dataclass
+class ObjectGoalPromptSensorConfig(LabSensorConfig):
+    type: str = "objectgoal_prompt_sensor"
+    goal_spec: str = "TASK_CATEGORY_ID"
+###
 cs.store(
     package="habitat.task.lab_sensors.imagegoal_sensor",
     group="habitat/task/lab_sensors",
@@ -1666,6 +1672,14 @@ cs.store(
     node=RearrangeReachSuccessMeasurementConfig,
 )
 
+### ADDED
+cs.store(
+    package="habitat.task.lab_sensors.objectgoal_prompt_sensor",
+    group="habitat/task/lab_sensors",
+    name="objectgoal_prompt_sensor",
+    node=ObjectGoalPromptSensorConfig,
+)
+###
 
 from hydra.core.config_search_path import ConfigSearchPath
 from hydra.core.plugins import Plugins
