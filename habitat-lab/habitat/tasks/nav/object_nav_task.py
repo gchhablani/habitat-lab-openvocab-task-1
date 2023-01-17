@@ -184,3 +184,57 @@ class ObjectNavigationTask(NavigationTask):
     r"""An Object Navigation Task class for a task specific methods.
     Used to explicitly state a type of the task in config.
     """
+
+## ADDED
+@registry.register_sensor(name="objectgoal_prompt_sensor")
+class ObjectGoalPromptSensor(Sensor):
+    def __init__(
+        self,
+        sim,
+        config: "DictConfig",
+        dataset: "ObjectNavDatasetV1",
+        *args: Any,
+        **kwargs: Any,
+    ):
+        self._sim = sim
+        self._dataset = dataset
+        self.embedding_dict = np.load('/content/habitat-lab/id_to_embedding_map.npy', allow_pickle=True)[()]
+        super().__init__(config=config)
+
+    cls_uuid: str = "objectgoal_prompt"
+
+    def _get_uuid(self, *Args, **kwargs):
+        return self.cls_uuid
+
+    def _get_sensor_type(self, *args: Any, **kwargs: Any):
+        return SensorTypes.SEMANTIC
+
+    def _get_observation_space(self, *args: Any, **kwargs: Any):
+        sensor_shape = (512, )
+        return spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=sensor_shape, dtype=np.float32)
+
+    def get_observation(
+        self,
+        observations,
+        *args: Any,
+        episode: ObjectGoalNavEpisode,
+        **kwargs: Any,
+    ) -> Optional[np.ndarray]:
+
+        if len(episode.goals) == 0:
+            logger.error(
+                f"No goal specified for episode {episode.episode_id}."
+            )
+            return None
+        if not isinstance(episode.goals[0], ObjectGoal):
+            logger.error(
+                f"First goal should be ObjectGoal, episode {episode.episode_id}."
+            )
+            return None
+        category_name = episode.object_category
+        if self.config.goal_spec == "TASK_CATEGORY_ID":
+            return self.embedding_dict[self._dataset.category_to_task_category_id[category_name]]
+        else:
+            raise RuntimeError(
+                "Wrong goal_spec specified for ObjectGoalPromptSensor."
+            )
