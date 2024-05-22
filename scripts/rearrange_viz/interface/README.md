@@ -30,31 +30,37 @@ The sample directory is arranged as follows:
 - If both Task and Evaluation Function are correct, you can skip the remarks and the comments. Otherwise, you should provide some feedback as to why they are wrong.
 - For both Task and Evaluation Function, we provide some pre-defined remarks. You can select one or more of these from the list. Here are examples of each:
 
-    **Task**:
+    **Instruction/Task**:
     - Hallucination
-        - The task has incorrect initial room for an object in the task instruction (e.g. bowl is in dining room but task asks to move it from the bedroom).
-        - The task specifies some object, receptacle or room which is not present in the scene.
+        - The instruction references an object/furniture/room (or a relation thereof) that doesn't actually exist in the scene.
+        - Example: _"Move the bowl from the cabinet to the table in the kitchen."_ The kitchen does not have a table (entity hallucination). There is a bowl in the scene, but not in a cabinet (relation hallucination).
     - Already satisfied
         - The task asks to move some object to a room where it is already initialized.
+        - Example: _"Move the bowl and pitcher to the cabinet"_. If either the bowl or pitcher was initialized in the cabinet, then the task is already satisfied.
     - Numerical entity IDs
-        - The instruction is unclear without specifying the object, receptacle or room IDs (e.g. Rearrange the bedrooms. Move lamp from bedroom to bedroom.). In the visualization, we do not show the IDs but the corresponding episode in `sample_episodes.json` may have this information.
+        - The instruction is unclear without knowing the instance IDs of objects, furniture or rooms.
+        - Example: _"Take the t-shirt from bedroom 1 to the bed in bedroom 2."_ The viz tool may display this as _"Take the t-shirt from bedroom to the bed in bedroom"_, either should be marked wrong.
     - Unresolvable ambiguity
-        - The task is unclear.
+        - The task is unclear and requires additional context or preferences.
+        - Eample: _"Let's tidy up the living room."_
     - Other
 
     **Evaluation Function**:
     - Furniture should have been room
-        - Evaluation uses receptacle for a placement, but no goal receptacle specified in the instruction.
+        - Evaluation uses furniture for a placement, but the instruction specifies anywhere in a room.
+        - Example: _"Move the doll to the playroom."_ and the eval requires the doll to be placed on particular furniture in the playroom.
     - Incorrect object/room/furniture
-        - Evaluation maps to incorrect room/receptacle or moves the wrong object.
+        - Evaluation maps to incorrect room/furniture or moves the wrong object.
+        - Example: _"Move the doll to the playroom."_ and the eval requires the doll to be in a bedroom.
     - Missing relation
         - The evaluation function misses one or more rearrangements in the instruction. This includes `on the floor` underline and/or missing one or more objects which were to be rearranged.
     - Incorrect relation type
-        - Evaluation function maps to the correct receptacle, but uses the wrong relation. (e.g. task asks to put something on top of another, but evaluation function places it inside).
+        - Evaluation function maps to the correct furniture, but uses the wrong relation.
+        - Example: _"Set the doll on the cabinet."_ but the eval requires the doll to be inside the cabinet.
     - Incorrect temporal
-        - In a temporal instruction (first do X, then do Y), there is an issue with the order in which the evaluation function proposes to rearrange things.
-    - Missing same/different arg constraint
-        - The task requires the two objects to be placed on same receptacle, or strictly different receptacles, but the evaluation function does not specify that. 
+        - The evaluation function misses, over-specifies, or otherwise requires the wrong temporal order. A temporal instruction requires some relations to be satisfied before others (first do X, then do Y).
+    - Missing/incorrect same/different arg constraint
+        - The task requires the two objects to be placed on same furniture (_"Place the candles on a table in the living room"_), or strictly different furniture (_"Place a candle on each table in the living room"_), but the evaluation function does not specify that.
         - **Note that** all such tasks will have by default incorrect evaluation functions, as we do not support same arg/different arg constraints currently.
     - Other
 - In case you select `Other` for either Task or Evaluation Function, please add a comment in the `Comments` input as to why you feel either `Task` or `Evaluation Function` is incorrect. For other remarks, adding `Comments` is optional but encouraged.
@@ -92,6 +98,6 @@ The sample directory is arranged as follows:
 - What does the "new bed" mean? I assume the object is already on one bed?
   - I would treat that equivalently to "other" bed, where the object starts on a given bed.
 
-## Receptacle List
-The figure below shows all the receptacles that we support at the moment and their names.
+## Furniture List
+The figure below shows all the furniture that we support at the moment and their names.
 ![alt text](receptacle_collage.png)
