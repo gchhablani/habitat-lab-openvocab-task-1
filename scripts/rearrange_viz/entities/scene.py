@@ -529,7 +529,7 @@ class Scene:
             ax.text(
                 0.5,
                 self.config.instruction_relative_height,
-                ''.join(filter(lambda x: not x.isdigit(), wrapped_text)),
+                wrapped_text,
                 horizontalalignment="center",
                 verticalalignment="bottom",
                 transform=ax.transAxes,
