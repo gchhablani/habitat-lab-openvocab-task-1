@@ -19,6 +19,7 @@ class Room:
         objects=None,
         use_full_height=False,
         in_proposition=False,
+        object_to_recep=None,
     ):
         """
         Initializes a Room instance.
@@ -36,6 +37,7 @@ class Room:
         self.objects = objects
         self.in_proposition = in_proposition
         self.plot_placeholder = False
+        self.object_to_recep = object_to_recep
 
         if self.objects:
             self.use_full_height = True
@@ -147,7 +149,13 @@ class Room:
         if self.objects:
             object_widths = 0
             for object in self.objects:
-                object_widths += object.width
+                if self.object_to_recep is None:
+                    object_widths += object.width
+                else:
+                    if object.object_id in self.object_to_recep.keys():
+                        continue
+                    else:
+                        object_widths += object.width
 
             min_width = max(min_width, object_widths * self.config.min_width_per_object)
 
@@ -222,9 +230,15 @@ class Room:
             + self.config.top_pad
         )
         if self.objects:
+            # Handle non mapped objects
             # Calculate initial offset for objects considering left margin, horizontal padding, and spacing objects evenly
-            total_object_width = sum(obj.width for obj in self.objects)
-            num_objects = len(self.objects)
+            total_object_width = 0
+            num_objects = 0
+            for obj in self.objects:
+                if self.object_to_recep is None or obj.object_id not in self.object_to_recep.keys():
+                    total_object_width += obj.width
+                    num_objects += 1
+
             spacing = (
                 (
                     self.room_width
@@ -242,14 +256,22 @@ class Room:
             )
 
             for obj in self.objects:
-                ax = obj.plot(
-                    ax,
-                    position=(
-                        offset,
-                        new_position[1] + self.config.bottom_pad + self.config.full_height * self.config.objects_height,
-                    ),
-                )
-                offset += obj.width + spacing
+                if self.object_to_recep is None or obj.object_id not in self.object_to_recep.keys():
+                    ax = obj.plot(
+                        ax,
+                        position=(
+                            offset,
+                            new_position[1] + self.config.bottom_pad + self.config.full_height * self.config.objects_height,
+                        ),
+                    )
+                    offset += obj.width + spacing
+                elif self.object_to_recep is not None and obj.object_id in self.object_to_recep.keys():
+                    receptacle_id = self.object_to_recep[obj.object_id]
+                    current_receptacle = self.find_receptacle_by_id(receptacle_id)
+                    obj_position = current_receptacle.new_top_item_position
+                    ax = obj.plot(ax, obj_position)
+                    current_receptacle.new_top_item_position = (obj_position[0], obj.text_position[1] + obj.config.height)
+                    
 
         else:
             if not self.use_full_height:

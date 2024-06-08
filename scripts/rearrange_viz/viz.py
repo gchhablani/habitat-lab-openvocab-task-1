@@ -126,6 +126,7 @@ def plot_scene(
     instruction=None,
     force_hide_instructions=False,
     save_path=None,
+    object_to_recep=None,
 ):
     """
     Plot entire scene.
@@ -149,11 +150,11 @@ def plot_scene(
             for obj in objects
             if episode_data["object_to_room"][obj.object_id] == room_id
         ]
-        room = Room(config, room_id, room_receptacles, room_objects)
+        room = Room(config, room_id, room_receptacles, room_objects, object_to_recep=object_to_recep)
         rooms.append(room)
 
     scene = Scene(config, rooms, episode_data["instruction"] if instruction is None else instruction)
-    fig, ax, num_instruction_lines = scene.plot(propositions, constraints, force_hide_instructions)
+    fig, ax, num_instruction_lines = scene.plot(receptacle_icon_mapping, propositions, constraints, force_hide_instructions, )
     width_inches = config.width_inches
     fig.set_size_inches(
         width_inches, (scene.height / scene.width) * width_inches
@@ -216,7 +217,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
         # Handle Propositions
         propositions = run_data["evaluation_propositions"]
         for proposition in propositions:
-            if proposition["function_name"] not in ["is_on_top", "is_inside", "is_on_floor", "is_in_room"]:
+            if proposition["function_name"] not in ["is_on_top", "is_inside", "is_on_floor", "is_in_room", "is_next_to"]:
                 raise NotImplementedError(f'Not implemented for function_name {proposition["function_name"]}')
             if "object_handles" in proposition["args"]:
                 if proposition["args"]["number"] > 1 and len(proposition["args"]["object_handles"]) != proposition["args"]["number"]:
@@ -241,7 +242,27 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                     proposition["args"]["room_names"].append(
                         id_to_room[room_id]
                     )
-
+            if "entity_handles_a" in proposition["args"]:
+                for entity_index in ['a', 'b']:
+                    proposition["args"][f"entity_handles_{entity_index}_names_and_types"] = []
+                    for entity_handle in proposition["args"][f"entity_handles_{entity_index}"]:
+                        if entity_handle in handle_to_object:
+                            proposition["args"][f"entity_handles_{entity_index}_names_and_types"].append(
+                                (
+                                    handle_to_object[entity_handle],
+                                    "object"
+                                )
+                            )
+                        elif entity_handle in handle_to_recep:
+                            proposition["args"][f"entity_handles_{entity_index}_names_and_types"].append(
+                                (
+                                    handle_to_object[entity_handle],
+                                    "receptacle"
+                                )
+                            )
+                        else:
+                            raise ValueError(f"Unknown entity type for handle {entity_handle}. Should be either object or receptacle.")
+                            
         # Handle Constraints
         constraints = run_data["evaluation_constraints"]
         for idx, constraint in enumerate(constraints):
@@ -424,6 +445,7 @@ def main():
                     instruction=run_data["instruction"],
                     force_hide_instructions=args.force_hide_instructions,
                     save_path = os.path.join(save_directory, f"viz_{episode_id}.png"),
+                    object_to_recep=episode_data["object_to_recep"],
                 )
 
             # Add run data for the current episode to the dictionary

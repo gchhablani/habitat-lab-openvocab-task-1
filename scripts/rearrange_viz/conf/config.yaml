@@ -2,10 +2,10 @@ defaults:
   - object: default
 
 object:
-  text_margin: 150
+  text_margin: 115
   width: 80
   height: 80
-  text_size: 13
+  text_size: 11
   rounding_size: 10
   max_chars_per_line: 9
   on_floor_linewidth: 2
@@ -14,7 +14,7 @@ object:
 
 receptacle:
   horizontal_margin: 5
-  target_height: 315 # 0.35 * full_height
+  target_height: 500 # 0.35 * full_height
   placeholder:
     width: 80
     height: 80
@@ -33,8 +33,8 @@ room:
   bottom_pad: 170
   left_pad: 20
   right_pad: 20
-  full_height: 900
-  half_height: 500
+  full_height: 1800
+  half_height: 900
   placeholder_height_if_full: 0.5 # of full height above bottom pad
   placeholder_height_if_half: 0.85 # of half height above bottom pad
   objects_height: 0.75 # of full height above bottom pad
@@ -47,12 +47,27 @@ room:
   min_width_per_object: 6
 
 scene:
+  is_next_to:
+    width: 1500
+    height: 1000
+    horizontal_margin: 300
+    object:
+      text_margin: 115
+      width: 80
+      height: 80
+      text_size: 11
+      rounding_size: 10
+      max_chars_per_line: 9
+    receptacle:
+      horizontal_margin: 5
+      target_height: 60 # 0.35 * full_height
+
   arrow:
     head_length: 25
     head_width: 50
     linewidth: 1
     overhang: 0.9
-  target_width: 5500
+  target_width: 6000
   instruction_text_size: 20
   instruction_relative_height: 1.05
   max_chars_per_line: 100
