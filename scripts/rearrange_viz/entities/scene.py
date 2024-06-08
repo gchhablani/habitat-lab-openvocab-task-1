@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import FancyArrow, FancyArrowPatch, PathPatch
+from matplotlib.patches import FancyArrow, PathPatch
 from matplotlib.path import Path
-from .utils import wrap_text
-from .is_next_to_legend import IsNextToLegend
 
+from .is_next_to_legend import IsNextToLegend
+from .utils import wrap_text
 
 
 class Scene:
@@ -85,7 +85,13 @@ class Scene:
         return sorted_rooms
 
     def plot_object_to_receptacle_lines(
-        self, object_names, receptacle_names, number, function_name, ax, color=None,
+        self,
+        object_names,
+        receptacle_names,
+        number,
+        function_name,
+        ax,
+        color=None,
     ):
         """
         Plots lines between objects and receptacles based on their relations.
@@ -112,7 +118,10 @@ class Scene:
                         for receptacle_obj in receptacle_objs:
                             if function_name == "is_inside":
                                 if len(object_names) > number:
-                                    line_style = (0, (5, 10))  # Dotted line for multiple objects
+                                    line_style = (
+                                        0,
+                                        (5, 10),
+                                    )  # Dotted line for multiple objects
                                 else:
                                     line_style = (
                                         "-"  # Solid line for single object
@@ -127,7 +136,10 @@ class Scene:
                                 )
                             elif function_name == "is_on_top":
                                 if len(object_names) > number:
-                                    line_style = (0, (5, 10))  # Dotted line for multiple objects
+                                    line_style = (
+                                        0,
+                                        (5, 10),
+                                    )  # Dotted line for multiple objects
                                 else:
                                     line_style = (
                                         "-"  # Solid line for single object
@@ -141,7 +153,9 @@ class Scene:
                                     color=color,
                                 )
 
-    def plot_object_to_room_lines(self, object_names, room_names, number, ax, color=None):
+    def plot_object_to_room_lines(
+        self, object_names, room_names, number, ax, color=None
+    ):
         """
         Plots lines between objects and rooms based on their relations.
 
@@ -164,7 +178,10 @@ class Scene:
         for object_obj in source_objects:
             for room_obj in target_rooms:
                 if len(object_names) > number:
-                    line_style = (0, (5, 10))  # Dotted line for multiple objects
+                    line_style = (
+                        0,
+                        (5, 10),
+                    )  # Dotted line for multiple objects
                 else:
                     line_style = "-"  # Solid line for single object
 
@@ -177,7 +194,15 @@ class Scene:
                     color=color,
                 )
 
-    def add_arrow(self, ax, obj_loc, room_loc, line_style, curved=True, color=(1, 1, 1, 1)):
+    def add_arrow(
+        self,
+        ax,
+        obj_loc,
+        room_loc,
+        line_style,
+        curved=True,
+        color=(1, 1, 1, 1),
+    ):
         """
         Adds an arrow to the given line.
 
@@ -195,18 +220,24 @@ class Scene:
 
         if curved:
             # Calculate control points for the Bézier curve
-            ctrl_x = (x0 + x1) / 2 + dy/2
-            ctrl_y = (y0 + y1) / 2 + abs(dx)/2  # Curve upwards
+            ctrl_x = (x0 + x1) / 2 + dy / 2
+            ctrl_y = (y0 + y1) / 2 + abs(dx) / 2  # Curve upwards
 
             # Define path for the curved arrow
             path_data = [
                 (Path.MOVETO, (x0, y0)),
                 (Path.CURVE3, (ctrl_x, ctrl_y)),
-                (Path.CURVE3, (x1, y1))
+                (Path.CURVE3, (x1, y1)),
             ]
             codes, verts = zip(*path_data)
             path = Path(verts, codes)
-            patch = PathPatch(path, linestyle=line_style, linewidth=self.config.arrow.linewidth, facecolor='none', edgecolor=color)
+            patch = PathPatch(
+                path,
+                linestyle=line_style,
+                linewidth=self.config.arrow.linewidth,
+                facecolor="none",
+                edgecolor=color,
+            )
             ax.add_patch(patch)
 
             # Calculate the derivative (tangent) at the end point of the Bézier curve
@@ -214,14 +245,21 @@ class Scene:
             dx_dt = 2 * (1 - t) * (ctrl_x - x0) + 2 * t * (x1 - ctrl_x)
             dy_dt = 2 * (1 - t) * (ctrl_y - y0) + 2 * t * (y1 - ctrl_y)
             arrow_dir = np.array([dx_dt, dy_dt])
-            arrow_dir /= np.linalg.norm(arrow_dir)  # Normalize the direction vector
+            arrow_dir /= np.linalg.norm(
+                arrow_dir
+            )  # Normalize the direction vector
 
             # Calculate the position for the arrowhead
-            head_pos = np.array([x1, y1]) - arrow_dir * self.config.arrow.head_length
+            head_pos = (
+                np.array([x1, y1]) - arrow_dir * self.config.arrow.head_length
+            )
 
             # Add arrowhead
             arrow_head = FancyArrow(
-                head_pos[0], head_pos[1], arrow_dir[0] * self.config.arrow.head_length, arrow_dir[1] * self.config.arrow.head_length,
+                head_pos[0],
+                head_pos[1],
+                arrow_dir[0] * self.config.arrow.head_length,
+                arrow_dir[1] * self.config.arrow.head_length,
                 head_length=self.config.arrow.head_length,
                 head_width=self.config.arrow.head_width,
                 linewidth=self.config.arrow.linewidth,
@@ -234,7 +272,10 @@ class Scene:
 
         else:
             arrow = FancyArrow(
-                x0, y0, dx, dy,
+                x0,
+                y0,
+                dx,
+                dy,
                 linestyle=line_style,
                 head_length=self.config.arrow.head_length,
                 head_width=self.config.arrow.head_width,
@@ -486,11 +527,13 @@ class Scene:
             elif prop["function_name"] == "is_on_floor":
                 on_floor_objs += prop["args"]["object_names"]
             elif prop["function_name"] == "is_next_to":
-                is_next_tos += [[
-                    prop["args"]['entity_handles_a_names_and_types'], 
-                    prop["args"]['entity_handles_b_names_and_types'],
-                    prop["args"]['number'],
-                ]]
+                is_next_tos += [
+                    [
+                        prop["args"]["entity_handles_a_names_and_types"],
+                        prop["args"]["entity_handles_b_names_and_types"],
+                        prop["args"]["number"],
+                    ]
+                ]
             else:
                 raise NotImplementedError(
                     f"Not implemented for function with name: {prop['function_name']}."
@@ -569,9 +612,8 @@ class Scene:
             "Lavender": "#E6E6FA",
             "Salmon": "#FA8072",
             "Peach": "#FFDAB9",
-            "Pink": "#FFC0CB"
+            "Pink": "#FFC0CB",
         }
-
 
         color_index = 0
 
@@ -583,30 +625,40 @@ class Scene:
                 if "object_names" in args:
                     object_names = args["object_names"]
                     number = args["number"]
-                    
+
                     # Cycle through the color palette for each proposition
-                    color = list(color_palette.values())[color_index % len(color_palette)]
+                    color = list(color_palette.values())[
+                        color_index % len(color_palette)
+                    ]
                     color_index += 1
                     if function_name in ["is_inside", "is_on_top"]:
                         receptacle_names = args["receptacle_names"]
                         self.plot_object_to_receptacle_lines(
-                            object_names, receptacle_names, number, function_name, ax, color,
+                            object_names,
+                            receptacle_names,
+                            number,
+                            function_name,
+                            ax,
+                            color,
                         )
                     elif function_name == "is_in_room":
                         room_names = args["room_names"]
                         self.plot_object_to_room_lines(
-                            object_names, room_names, number, ax, color,
+                            object_names,
+                            room_names,
+                            number,
+                            ax,
+                            color,
                         )
                 # else:
                 #     raise NotImplementedError(f"Not implemented line plotting for {function_name}.")
 
-
-
         # Add instruction on top
         wrapped_text = ""
         if self.instruction and show_instruction:
-            wrapped_text = wrap_text(self.instruction, self.config.max_chars_per_line)
-
+            wrapped_text = wrap_text(
+                self.instruction, self.config.max_chars_per_line
+            )
 
             # TODO: fix the center of text
             ax.text(
@@ -621,9 +673,18 @@ class Scene:
 
         # Plot the legend
         if is_next_tos:
-            self.legend = IsNextToLegend(self.config.is_next_to, is_next_tos, receptacle_icon_mapping)
-            self.legend.plot((self.width, (height_lower + height_upper)/2 - self.config.is_next_to.height/2), ax)
-            ax.set_xlim(0-300, self.width + 300 + self.legend.width + 300)
+            self.legend = IsNextToLegend(
+                self.config.is_next_to, is_next_tos, receptacle_icon_mapping
+            )
+            self.legend.plot(
+                (
+                    self.width,
+                    (height_lower + height_upper) / 2
+                    - self.config.is_next_to.height / 2,
+                ),
+                ax,
+            )
+            ax.set_xlim(0 - 300, self.width + 300 + self.legend.width + 300)
 
         # Set axis limits
         else:
@@ -634,7 +695,13 @@ class Scene:
         else:
             return ax, height_lower, height_upper, wrapped_text
 
-    def plot(self, receptacle_icon_mapping, propositions=None, constraints=None, force_hide_instructions=None):
+    def plot(
+        self,
+        receptacle_icon_mapping,
+        propositions=None,
+        constraints=None,
+        force_hide_instructions=None,
+    ):
         """
         Plots the scene.
 
@@ -655,7 +722,7 @@ class Scene:
             if constraint["type"] == "TemporalConstraint":
                 toposort = constraint["toposort"]
         if toposort:
-            
+
             # NOTE: All the next bits are only used to get a list of all the mentioned rooms to keep them in front!
             # We don't really care about using mentioned objects and receptacles after
             mentioned_objs = []
@@ -713,13 +780,15 @@ class Scene:
                 current_propositions = [
                     propositions[idx] for idx in current_level
                 ]
-                ax, height_lower, height_upper, wrapped_text = self.plot_for_propositions(
-                    current_propositions,
-                    receptacle_icon_mapping=receptacle_icon_mapping,
-                    show_instruction=show_instruction,
-                    height_offset=min_lower,
-                    initial_ax=ax,
-                    all_mentioned_rooms=all_mentioned_rooms,
+                ax, height_lower, height_upper, wrapped_text = (
+                    self.plot_for_propositions(
+                        current_propositions,
+                        receptacle_icon_mapping=receptacle_icon_mapping,
+                        show_instruction=show_instruction,
+                        height_offset=min_lower,
+                        initial_ax=ax,
+                        all_mentioned_rooms=all_mentioned_rooms,
+                    )
                 )
                 # Plot horizontal line
                 ax.axhline(
@@ -728,17 +797,24 @@ class Scene:
                     linewidth=4,
                     linestyle="-",
                 )
-                num_instruction_lines = max(num_instruction_lines, wrapped_text.count("\n")+1)
+                num_instruction_lines = max(
+                    num_instruction_lines, wrapped_text.count("\n") + 1
+                )
                 max_upper = max(height_upper, max_upper)
                 min_lower = min(height_lower - 40, min_lower)
             self.height = max_upper - min_lower
             return fig, ax, num_instruction_lines
         else:
             num_instruction_lines = 0
-            fig, ax, height_lower, height_upper, wrapped_text = self.plot_for_propositions(
-                propositions, receptacle_icon_mapping=receptacle_icon_mapping, show_instruction=not force_hide_instructions,
+            fig, ax, height_lower, height_upper, wrapped_text = (
+                self.plot_for_propositions(
+                    propositions,
+                    receptacle_icon_mapping=receptacle_icon_mapping,
+                    show_instruction=not force_hide_instructions,
+                )
             )
             self.height = height_upper - height_lower
-            num_instruction_lines = max(num_instruction_lines, wrapped_text.count("\n")+1)
+            num_instruction_lines = max(
+                num_instruction_lines, wrapped_text.count("\n") + 1
+            )
             return fig, ax, num_instruction_lines
-

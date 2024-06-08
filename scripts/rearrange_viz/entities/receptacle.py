@@ -85,7 +85,7 @@ class Receptacle:
         bottom = alpha.shape[0] + 1
         top = 0
         for idx, row in enumerate(alpha):
-            middle_idx = row.shape[0]//2
+            middle_idx = row.shape[0] // 2
             row_sum = np.sum(row[middle_idx])
             if row_sum != 0:
                 top = idx + 1
@@ -168,11 +168,14 @@ class Receptacle:
             ax = self.top_placeholder.plot(ax, self.top_placeholder_origin)
             self.new_top_item_position = (
                 self.top_placeholder_origin[0],
-                self.top_placeholder_origin[1] + self.config.placeholder.height
+                self.top_placeholder_origin[1]
+                + self.config.placeholder.height,
             )
         if self.plot_center_placeholder and properties["is_inside"]:
             self.center_placeholder = Placeholder(self.config)
-            ax = self.center_placeholder.plot(ax, self.center_placeholder_origin)
+            ax = self.center_placeholder.plot(
+                ax, self.center_placeholder_origin
+            )
 
         ax.axis("off")
 

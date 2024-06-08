@@ -1,5 +1,5 @@
 import re
-import textwrap
+
 from PIL import Image, ImageChops
 
 
@@ -34,12 +34,13 @@ def add_tint_to_rgb(image, tint_color):
         ),
     )
 
+
 def wrap_text(text, max_chars_per_line):
     # Remove digits which are preceded by `_`.
-    text = re.sub(r'_(\d+)', '', text)
+    text = re.sub(r"_(\d+)", "", text)
     # Remove underscores and slashes
     text = text.replace("/", "_")
-    text = text.replace(' ', '_')
+    text = text.replace(" ", "_")
     names = text.split("_")
 
     current_line = ""

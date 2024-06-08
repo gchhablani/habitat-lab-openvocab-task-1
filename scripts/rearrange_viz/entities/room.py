@@ -1,5 +1,3 @@
-import textwrap
-
 import matplotlib.pyplot as plt
 
 from .placeholder import Placeholder
@@ -56,7 +54,9 @@ class Room:
             for object in self.objects:
                 object_widths += object.width
 
-            min_width = max(min_width, object_widths * self.config.min_width_per_object)
+            min_width = max(
+                min_width, object_widths * self.config.min_width_per_object
+            )
         total_receptacle_width = max(
             min_width, sum(receptacle.width for receptacle in self.receptacles)
         )
@@ -157,7 +157,9 @@ class Room:
                     else:
                         object_widths += object.width
 
-            min_width = max(min_width, object_widths * self.config.min_width_per_object)
+            min_width = max(
+                min_width, object_widths * self.config.min_width_per_object
+            )
 
         # Calculate total room width including margins
         minimum_room_width = max(
@@ -165,9 +167,7 @@ class Room:
         )
 
         self.room_width = (
-            minimum_room_width
-            + self.config.left_pad
-            + self.config.right_pad
+            minimum_room_width + self.config.left_pad + self.config.right_pad
         )
         if target_width is None:
             extra_horizontal_pad = 0
@@ -185,19 +185,24 @@ class Room:
         self.room_width = self.room_width + 2 * extra_horizontal_pad
 
         # Calculate initial offset considering left margin and horizontal padding
-        
+
         new_receptacle_width = sum(recep.width for recep in self.receptacles)
         num_receptacles = len(self.receptacles)
         spacing = (
-                (
-                    self.room_width
-                    - self.config.receptacle_horizontal_margin_fraction
-                    * 2
-                    * self.room_width
-                )
-                - new_receptacle_width
-            ) / (num_receptacles + 1)
-        offset = new_position[0] + spacing + self.config.receptacle_horizontal_margin_fraction * self.room_width
+            (
+                self.room_width
+                - self.config.receptacle_horizontal_margin_fraction
+                * 2
+                * self.room_width
+            )
+            - new_receptacle_width
+        ) / (num_receptacles + 1)
+        offset = (
+            new_position[0]
+            + spacing
+            + self.config.receptacle_horizontal_margin_fraction
+            * self.room_width
+        )
         for receptacle in self.receptacles:
             ax = receptacle.plot(
                 ax, position=(offset, new_position[1] + self.config.bottom_pad)
@@ -214,7 +219,9 @@ class Room:
 
         wrapped_text = wrap_text(self.room_id, self.config.max_chars_per_line)
 
-        text_y = new_position[1] + self.config.bottom_pad/4 * 1/(wrapped_text.count('\n') + 1)    
+        text_y = new_position[1] + self.config.bottom_pad / 4 * 1 / (
+            wrapped_text.count("\n") + 1
+        )
         ax.annotate(
             wrapped_text,
             xy=(text_x, text_y),
@@ -235,7 +242,10 @@ class Room:
             total_object_width = 0
             num_objects = 0
             for obj in self.objects:
-                if self.object_to_recep is None or obj.object_id not in self.object_to_recep.keys():
+                if (
+                    self.object_to_recep is None
+                    or obj.object_id not in self.object_to_recep.keys()
+                ):
                     total_object_width += obj.width
                     num_objects += 1
 
@@ -256,22 +266,35 @@ class Room:
             )
 
             for obj in self.objects:
-                if self.object_to_recep is None or obj.object_id not in self.object_to_recep.keys():
+                if (
+                    self.object_to_recep is None
+                    or obj.object_id not in self.object_to_recep.keys()
+                ):
                     ax = obj.plot(
                         ax,
                         position=(
                             offset,
-                            new_position[1] + self.config.bottom_pad + self.config.full_height * self.config.objects_height,
+                            new_position[1]
+                            + self.config.bottom_pad
+                            + self.config.full_height
+                            * self.config.objects_height,
                         ),
                     )
                     offset += obj.width + spacing
-                elif self.object_to_recep is not None and obj.object_id in self.object_to_recep.keys():
+                elif (
+                    self.object_to_recep is not None
+                    and obj.object_id in self.object_to_recep.keys()
+                ):
                     receptacle_id = self.object_to_recep[obj.object_id]
-                    current_receptacle = self.find_receptacle_by_id(receptacle_id)
+                    current_receptacle = self.find_receptacle_by_id(
+                        receptacle_id
+                    )
                     obj_position = current_receptacle.new_top_item_position
                     ax = obj.plot(ax, obj_position)
-                    current_receptacle.new_top_item_position = (obj_position[0], obj.text_position[1] + obj.config.height)
-                    
+                    current_receptacle.new_top_item_position = (
+                        obj_position[0],
+                        obj.text_position[1] + obj.config.height,
+                    )
 
         else:
             if not self.use_full_height:
@@ -284,7 +307,15 @@ class Room:
 
         self.center_position = (
             new_position[0] + self.room_width / 2,
-            new_position[1] + self.config.bottom_pad +(self.config.placeholder_height_if_full * self.config.full_height  if self.use_full_height else self.config.placeholder_height_if_half * self.config.half_height),
+            new_position[1]
+            + self.config.bottom_pad
+            + (
+                self.config.placeholder_height_if_full
+                * self.config.full_height
+                if self.use_full_height
+                else self.config.placeholder_height_if_half
+                * self.config.half_height
+            ),
         )
 
         if not self.in_proposition:

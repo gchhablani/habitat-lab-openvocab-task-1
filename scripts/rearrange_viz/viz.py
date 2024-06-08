@@ -10,11 +10,16 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 from entities import Object, Receptacle, Room, Scene
+from google_drive_utils import (
+    add_image_to_sheet,
+    create_drive_folder,
+    get_google_sheet,
+    load_credentials,
+    upload_image_to_drive,
+)
+from googleapiclient.discovery import build
 from omegaconf import OmegaConf
 from tqdm import tqdm
-
-from google_drive_utils import load_credentials, create_drive_folder, upload_image_to_drive, add_image_to_sheet, get_google_sheet
-from googleapiclient.discovery import build
 
 matplotlib.use("Agg")
 
@@ -150,11 +155,26 @@ def plot_scene(
             for obj in objects
             if episode_data["object_to_room"][obj.object_id] == room_id
         ]
-        room = Room(config, room_id, room_receptacles, room_objects, object_to_recep=object_to_recep)
+        room = Room(
+            config,
+            room_id,
+            room_receptacles,
+            room_objects,
+            object_to_recep=object_to_recep,
+        )
         rooms.append(room)
 
-    scene = Scene(config, rooms, episode_data["instruction"] if instruction is None else instruction)
-    fig, ax, num_instruction_lines = scene.plot(receptacle_icon_mapping, propositions, constraints, force_hide_instructions, )
+    scene = Scene(
+        config,
+        rooms,
+        episode_data["instruction"] if instruction is None else instruction,
+    )
+    fig, ax, num_instruction_lines = scene.plot(
+        receptacle_icon_mapping,
+        propositions,
+        constraints,
+        force_hide_instructions,
+    )
     width_inches = config.width_inches
     fig.set_size_inches(
         width_inches, (scene.height / scene.width) * width_inches
@@ -171,12 +191,7 @@ def plot_scene(
         else:
             top = 0.7
     plt.subplots_adjust(
-        right=0.98,
-        left=0.02,
-        bottom=0.05,
-        top=top,
-        wspace=0.1,
-        hspace=0.1
+        right=0.98, left=0.02, bottom=0.05, top=top, wspace=0.1, hspace=0.1
     )
 
     if save_path:
@@ -188,101 +203,125 @@ def plot_scene(
     scene.cleanup()
     del scene
 
+
 def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
-        episode_data = load_episode_data(args.episode_data_dir, episode_id, args.episode_file_prefix)
-        handle_to_recep = {
-            v: k for k, v in episode_data["recep_to_handle"].items()
-        }
-        handle_to_object = {
-            v: k for k, v in episode_data["object_to_handle"].items()
-        }
-        id_to_room = {v: k for k, v in episode_data["room_to_id"].items()}
-        for receptacle_id in episode_data["recep_to_description"]:
-            if not os.path.exists(
-                f'receptacles/{"_".join(receptacle_id.split("_")[:-1])}@2x.png'
+    episode_data = load_episode_data(
+        args.episode_data_dir, episode_id, args.episode_file_prefix
+    )
+    handle_to_recep = {
+        v: k for k, v in episode_data["recep_to_handle"].items()
+    }
+    handle_to_object = {
+        v: k for k, v in episode_data["object_to_handle"].items()
+    }
+    id_to_room = {v: k for k, v in episode_data["room_to_id"].items()}
+    for receptacle_id in episode_data["recep_to_description"]:
+        if not os.path.exists(
+            f'receptacles/{"_".join(receptacle_id.split("_")[:-1])}@2x.png'
+        ):
+            raise NotImplementedError(
+                f"Missing receptacle asset for receptacle ID: {receptacle_id}"
+            )
+
+    receptacle_icon_mapping = {
+        receptacle_id: f'receptacles/{"_".join(receptacle_id.split("_")[:-1])}@2x.png'
+        for receptacle_id in episode_data["recep_to_description"]
+        if os.path.exists(
+            f'receptacles/{"_".join(receptacle_id.split("_")[:-1])}@2x.png'
+        )
+    }
+    run_data = load_run_data(args.run_json, episode_id, loaded_run_data)
+
+    # Handle Propositions
+    propositions = run_data["evaluation_propositions"]
+    for proposition in propositions:
+        if proposition["function_name"] not in [
+            "is_on_top",
+            "is_inside",
+            "is_on_floor",
+            "is_in_room",
+            "is_next_to",
+        ]:
+            raise NotImplementedError(
+                f'Not implemented for function_name {proposition["function_name"]}'
+            )
+        if "object_handles" in proposition["args"]:
+            if (
+                proposition["args"]["number"] > 1
+                and len(proposition["args"]["object_handles"])
+                != proposition["args"]["number"]
             ):
                 raise NotImplementedError(
-                    f"Missing receptacle asset for receptacle ID: {receptacle_id}"
+                    f'Given number {proposition["args"]["number"]} does not match number of objects {len(proposition["args"]["object_handles"])} in proposition. Not handled currently.'
+                )
+            proposition["args"]["object_names"] = []
+            for object_handle in proposition["args"]["object_handles"]:
+                proposition["args"]["object_names"].append(
+                    handle_to_object[object_handle]
+                )
+        if "receptacle_handles" in proposition["args"]:
+            proposition["args"]["receptacle_names"] = []
+            for recep_handle in proposition["args"]["receptacle_handles"]:
+                proposition["args"]["receptacle_names"].append(
+                    handle_to_recep[recep_handle]
                 )
 
-        receptacle_icon_mapping = {
-            receptacle_id: f'receptacles/{"_".join(receptacle_id.split("_")[:-1])}@2x.png'
-            for receptacle_id in episode_data["recep_to_description"]
-            if os.path.exists(
-                f'receptacles/{"_".join(receptacle_id.split("_")[:-1])}@2x.png'
-            )
-        }
-        run_data = load_run_data(args.run_json, episode_id, loaded_run_data)
-
-        # Handle Propositions
-        propositions = run_data["evaluation_propositions"]
-        for proposition in propositions:
-            if proposition["function_name"] not in ["is_on_top", "is_inside", "is_on_floor", "is_in_room", "is_next_to"]:
-                raise NotImplementedError(f'Not implemented for function_name {proposition["function_name"]}')
-            if "object_handles" in proposition["args"]:
-                if proposition["args"]["number"] > 1 and len(proposition["args"]["object_handles"]) != proposition["args"]["number"]:
-                    raise NotImplementedError(f'Given number {proposition["args"]["number"]} does not match number of objects {len(proposition["args"]["object_handles"])} in proposition. Not handled currently.')
-                proposition["args"]["object_names"] = []
-                for object_handle in proposition["args"]["object_handles"]:
-                    proposition["args"]["object_names"].append(
-                        handle_to_object[object_handle]
-                    )
-            if "receptacle_handles" in proposition["args"]:
-                proposition["args"]["receptacle_names"] = []
-                for recep_handle in proposition["args"][
-                    "receptacle_handles"
+        if "room_ids" in proposition["args"]:
+            proposition["args"]["room_names"] = []
+            for room_id in proposition["args"]["room_ids"]:
+                proposition["args"]["room_names"].append(id_to_room[room_id])
+        if "entity_handles_a" in proposition["args"]:
+            for entity_index in ["a", "b"]:
+                proposition["args"][
+                    f"entity_handles_{entity_index}_names_and_types"
+                ] = []
+                for entity_handle in proposition["args"][
+                    f"entity_handles_{entity_index}"
                 ]:
-                    proposition["args"]["receptacle_names"].append(
-                        handle_to_recep[recep_handle]
-                    )
+                    if entity_handle in handle_to_object:
+                        proposition["args"][
+                            f"entity_handles_{entity_index}_names_and_types"
+                        ].append((handle_to_object[entity_handle], "object"))
+                    elif entity_handle in handle_to_recep:
+                        proposition["args"][
+                            f"entity_handles_{entity_index}_names_and_types"
+                        ].append(
+                            (handle_to_object[entity_handle], "receptacle")
+                        )
+                    else:
+                        raise ValueError(
+                            f"Unknown entity type for handle {entity_handle}. Should be either object or receptacle."
+                        )
 
-            if "room_ids" in proposition["args"]:
-                proposition["args"]["room_names"] = []
-                for room_id in proposition["args"]["room_ids"]:
-                    proposition["args"]["room_names"].append(
-                        id_to_room[room_id]
-                    )
-            if "entity_handles_a" in proposition["args"]:
-                for entity_index in ['a', 'b']:
-                    proposition["args"][f"entity_handles_{entity_index}_names_and_types"] = []
-                    for entity_handle in proposition["args"][f"entity_handles_{entity_index}"]:
-                        if entity_handle in handle_to_object:
-                            proposition["args"][f"entity_handles_{entity_index}_names_and_types"].append(
-                                (
-                                    handle_to_object[entity_handle],
-                                    "object"
-                                )
-                            )
-                        elif entity_handle in handle_to_recep:
-                            proposition["args"][f"entity_handles_{entity_index}_names_and_types"].append(
-                                (
-                                    handle_to_object[entity_handle],
-                                    "receptacle"
-                                )
-                            )
-                        else:
-                            raise ValueError(f"Unknown entity type for handle {entity_handle}. Should be either object or receptacle.")
-                            
-        # Handle Constraints
-        constraints = run_data["evaluation_constraints"]
-        for idx, constraint in enumerate(constraints):
-            if constraint["type"] == "TemporalConstraint":
-                digraph = nx.DiGraph(constraint["args"]["dag_edges"])
-                constraint["toposort"] = [
-                    sorted(generation)
-                    for generation in nx.topological_generations(digraph)
-                ]
-            elif constraint["type"] == "TerminalSatisfactionConstraint":
-                unique_terminal_constraints = len(
-                    np.unique(constraint["args"]["proposition_indices"])
+    # Handle Constraints
+    constraints = run_data["evaluation_constraints"]
+    for idx, constraint in enumerate(constraints):
+        if constraint["type"] == "TemporalConstraint":
+            digraph = nx.DiGraph(constraint["args"]["dag_edges"])
+            constraint["toposort"] = [
+                sorted(generation)
+                for generation in nx.topological_generations(digraph)
+            ]
+        elif constraint["type"] == "TerminalSatisfactionConstraint":
+            unique_terminal_constraints = len(
+                np.unique(constraint["args"]["proposition_indices"])
+            )
+            if len(propositions) != unique_terminal_constraints:
+                print(
+                    f"For episodie_id:{episode_id}, len of propositions: {len(propositions)} and unique terminal constraints {unique_terminal_constraints}"
                 )
-                if len(propositions) != unique_terminal_constraints:
-                    print(f"For episodie_id:{episode_id}, len of propositions: {len(propositions)} and unique terminal constraints {unique_terminal_constraints}")
-            else:
-                raise NotImplementedError(
-                    f"Constraint type {constraint['type']} is not handled currently."
-                )
-        return episode_data, run_data, receptacle_icon_mapping, propositions, constraints
+        else:
+            raise NotImplementedError(
+                f"Constraint type {constraint['type']} is not handled currently."
+            )
+    return (
+        episode_data,
+        run_data,
+        receptacle_icon_mapping,
+        propositions,
+        constraints,
+    )
+
 
 def parse_arguments():
     """
@@ -309,13 +348,34 @@ def parse_arguments():
         "--save-path", type=str, help="Directory to save the figures"
     )
     parser.add_argument(
-        "--episode-file-prefix", type=str, help="Prefix for episode data files", default="episode_"
+        "--episode-file-prefix",
+        type=str,
+        help="Prefix for episode data files",
+        default="episode_",
     )
-    parser.add_argument('--google-creds', type=str, help='Path to Google Drive credentials JSON file')
-    parser.add_argument('--google-sheets-name', type=str, help='Name of Google Sheets document', default='Visualization-Rearrangement')
-    parser.add_argument('--force-hide-instructions', action='store_true', help='Flag to force hide instructions')
-    parser.add_argument('--sample-size', type=int, help="If only a random subset of all the episodes is to be visualized, the sample size.")
+    parser.add_argument(
+        "--google-creds",
+        type=str,
+        help="Path to Google Drive credentials JSON file",
+    )
+    parser.add_argument(
+        "--google-sheets-name",
+        type=str,
+        help="Name of Google Sheets document",
+        default="Visualization-Rearrangement",
+    )
+    parser.add_argument(
+        "--force-hide-instructions",
+        action="store_true",
+        help="Flag to force hide instructions",
+    )
+    parser.add_argument(
+        "--sample-size",
+        type=int,
+        help="If only a random subset of all the episodes is to be visualized, the sample size.",
+    )
     return parser.parse_args()
+
 
 def main():
     """
@@ -363,7 +423,17 @@ def main():
                         continue  # If there are no more episodes for this scene, skip to the next scene
                     selected_episode = random.choice(episodes)
                     try:
-                        temp_episode_data, temp_run_data, temp_receptacle_icon_mapping, temp_propositions, temp_constraints = get_episode_data_for_plot(args, selected_episode["episode_id"], loaded_run_data)
+                        (
+                            temp_episode_data,
+                            temp_run_data,
+                            temp_receptacle_icon_mapping,
+                            temp_propositions,
+                            temp_constraints,
+                        ) = get_episode_data_for_plot(
+                            args,
+                            selected_episode["episode_id"],
+                            loaded_run_data,
+                        )
                         sampled_episodes.append(selected_episode)
                         # Remove the selected episode from the list of episodes for its scene
                         episodes.remove(selected_episode)
@@ -380,8 +450,12 @@ def main():
                     break
 
             # Extract episode_ids
-            episode_ids = [episode["episode_id"] for episode in sampled_episodes]
-            unique_scenes = np.unique([episode["scene_id"] for episode in sampled_episodes])
+            episode_ids = [
+                episode["episode_id"] for episode in sampled_episodes
+            ]
+            unique_scenes = np.unique(
+                [episode["scene_id"] for episode in sampled_episodes]
+            )
             print("Sampled episodes unique scenes: ", unique_scenes)
             print("Missing scenes: ", set(scene_ids) - set(unique_scenes))
         else:
@@ -394,14 +468,17 @@ def main():
             )
 
     # Create a dictionary to store run data for episod es with correct visualizations
-    run_data_dict = {
-        "config": None,
-        "episodes": []        
-    }
+    run_data_dict = {"config": None, "episodes": []}
 
     for episode_id in tqdm(episode_ids):
         try:
-            episode_data, run_data, receptacle_icon_mapping, propositions, constraints = get_episode_data_for_plot(args, episode_id, loaded_run_data)
+            (
+                episode_data,
+                run_data,
+                receptacle_icon_mapping,
+                propositions,
+                constraints,
+            ) = get_episode_data_for_plot(args, episode_id, loaded_run_data)
 
             save_directory = (
                 args.save_path
@@ -409,9 +486,14 @@ def main():
                 else f"visualization_{episode_id}"
             )
             os.makedirs(save_directory, exist_ok=True)
-            
+
             # Save episode_data as JSON inside the folder
-            with open(os.path.join(save_directory, f"episode_data_{episode_id}.json"), "w") as episode_file:
+            with open(
+                os.path.join(
+                    save_directory, f"episode_data_{episode_id}.json"
+                ),
+                "w",
+            ) as episode_file:
                 json.dump(episode_data, episode_file, indent=4)
 
             if args.object_id:
@@ -444,42 +526,58 @@ def main():
                     receptacle_icon_mapping,
                     instruction=run_data["instruction"],
                     force_hide_instructions=args.force_hide_instructions,
-                    save_path = os.path.join(save_directory, f"viz_{episode_id}.png"),
+                    save_path=os.path.join(
+                        save_directory, f"viz_{episode_id}.png"
+                    ),
                     object_to_recep=episode_data["object_to_recep"],
                 )
 
             # Add run data for the current episode to the dictionary
-            run_data["viz_path"] = os.path.join(save_directory, f"viz_{episode_id}.png")
+            run_data["viz_path"] = os.path.join(
+                save_directory, f"viz_{episode_id}.png"
+            )
             run_data_dict["episodes"].append(run_data)
-            
+
             if args.google_creds:
                 # Load credentials for Drive
                 scopes = ["https://www.googleapis.com/auth/drive"]
                 drive_creds = load_credentials(args.google_creds, scopes)
                 drive_service = build("drive", "v3", credentials=drive_creds)
-                folder_id = create_drive_folder(drive_service, "Viz-Rearrangement")
+                folder_id = create_drive_folder(
+                    drive_service, "Viz-Rearrangement"
+                )
 
                 # Upload image to Google Drive and get the file ID
-                image_path = os.path.join(save_directory, f"viz_{episode_id}.png")
-                image_id, image_url = upload_image_to_drive(drive_service, folder_id, image_path)
-                drive_service.permissions().create(fileId=image_id, body={'role': 'reader', 'type': 'anyone'}).execute()
-                
+                image_path = os.path.join(
+                    save_directory, f"viz_{episode_id}.png"
+                )
+                image_id, image_url = upload_image_to_drive(
+                    drive_service, folder_id, image_path
+                )
+                drive_service.permissions().create(
+                    fileId=image_id, body={"role": "reader", "type": "anyone"}
+                ).execute()
             if args.google_creds and args.google_sheets_name:
-                scopes = ["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/spreadsheets"]
+                scopes = [
+                    "https://www.googleapis.com/auth/drive",
+                    "https://www.googleapis.com/auth/spreadsheets",
+                ]
                 creds = load_credentials(args.google_creds, scopes)
                 sheets_service = build("sheets", "v4", credentials=creds)
-                sheet_id = get_google_sheet(sheets_service, args.google_sheets_name, sheet_id)
-                res = add_image_to_sheet(sheets_service, sheet_id, episode_id, image_id)
+                sheet_id = get_google_sheet(
+                    sheets_service, args.google_sheets_name, sheet_id
+                )
+                _ = add_image_to_sheet(
+                    sheets_service, sheet_id, episode_id, image_id
+                )
 
             # Save the run data dictionary to a JSON file
-            with open(f'{save_directory}_run_data.json', 'w') as f:
+            with open(f"{save_directory}_run_data.json", "w") as f:
                 json.dump(run_data_dict, f, indent=4)
 
         except Exception:
             print(f"Episode ID: {episode_id}")
             print(traceback.format_exc())
-
-
 
 
 if __name__ == "__main__":
