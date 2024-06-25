@@ -3,87 +3,93 @@ import numpy as np
 from matplotlib.patches import FancyArrow, PathPatch
 from matplotlib.path import Path
 
-from .is_next_to_legend import IsNextToLegend
-from .same_args_legend import SameArgsLegend
+from .legends.is_next_to_legend import IsNextToLegend
+from .legends.same_args_legend import SameArgsLegend
 from .utils import wrap_text
 
+# Define a color palette for the lines
+# color_palette = plt.cm.get_cmap('Set3').colors
+color_palette = {
+    "Coral": "#FF7F50",
+    "Gold": "#FFD700",
+    "Cyan": "#00FFFF",
+    "Mint Green": "#98FF98",
+    "Lavender": "#E6E6FA",
+    "Salmon": "#FA8072",
+    "Peach": "#FFDAB9",
+    "Pink": "#FFC0CB",
+}
+        
+def sort_rooms(rooms, instruction):
+    # Sorts the rooms based on "relevance"
+    # Uses keyword matching with the instruction and room + receptacle + object names
+    if not instruction:
+        return rooms
+
+    # Split instruction string into words and exclude "room"
+    keywords = [word.lower().strip(".") for word in instruction.split()]
+
+    # Create a dictionary to hold the rooms and their relevance score
+    relevance_scores = {}
+
+    for room in rooms:
+        score = sum(
+            " ".join(room.room_id.split("_")[:-1]) in keyword
+            for keyword in keywords
+        )
+
+        # Consider receptacles in the score calculation
+        for receptacle in room.receptacles:
+            score += sum(
+                " ".join(receptacle.receptacle_id.split("_")[:-1])
+                in keyword
+                for keyword in keywords
+            )
+
+        # Consider objects in the score calculation
+        if room.objects:
+            for obj in room.objects:
+                score += sum(
+                    " ".join(obj.object_id.split("_")[:-1]) in keyword
+                    for keyword in keywords
+                )
+
+        relevance_scores[room] = score
+
+    # Sort the rooms based on relevance score
+    sorted_rooms = sorted(
+        relevance_scores.keys(),
+        key=lambda room: relevance_scores[room],
+        reverse=True,
+    )
+
+    return sorted_rooms
+
+def redistribute_target_width_to_rooms(rooms_to_plot, target_width):
+    # Calculate total width of all rooms
+    total_width = sum(room.width for room in rooms_to_plot)
+
+    # Calculate redistribution factor based on target width and total width
+    redistribution_factor = target_width / total_width
+
+    # Redistribute width to each room based on their width ratios
+    redistributed_widths = [
+        room.width * redistribution_factor for room in rooms_to_plot
+    ]
+
+    return redistributed_widths
 
 class Scene:
-    """
-    Represents a scene consisting of multiple rooms and provides methods for plotting objects, receptacles, and relations between them.
-    """
-
     def __init__(self, config, rooms, instruction=""):
-        """
-        Initializes a Scene instance.
-
-        Parameters:
-            config (object): A configuration object containing parameters for scene rendering.
-            rooms (list): List of Room objects representing the rooms in the scene.
-            instruction (str, optional): Instruction string used for sorting rooms based on relevance. Defaults to "".
-        """
         self.config = config.scene
         self.instruction = instruction
-        self.rooms = self.sort_rooms(rooms, instruction)
+        self.rooms = sort_rooms(rooms, instruction)
 
     def cleanup(self):
         if self.rooms:
             for room in self.rooms:
                 room.cleanup()
                 del room
-
-    def sort_rooms(self, rooms, instruction):
-        """
-        Sorts rooms based on their relevance to an instruction.
-
-        Parameters:
-            rooms (list): List of Room objects representing the rooms to be sorted.
-            instruction (str): Instruction string used for sorting rooms.
-
-        Returns:
-            list: List of Room objects sorted by relevance.
-        """
-        if not instruction:
-            return rooms
-
-        # Split instruction string into words and exclude "room"
-        keywords = [word.lower().strip(".") for word in instruction.split()]
-
-        # Create a dictionary to hold the rooms and their relevance score
-        relevance_scores = {}
-
-        for room in rooms:
-            score = sum(
-                " ".join(room.room_id.split("_")[:-1]) in keyword
-                for keyword in keywords
-            )
-
-            # Consider receptacles in the score calculation
-            for receptacle in room.receptacles:
-                score += sum(
-                    " ".join(receptacle.receptacle_id.split("_")[:-1])
-                    in keyword
-                    for keyword in keywords
-                )
-
-            # Consider objects in the score calculation
-            if room.objects:
-                for obj in room.objects:
-                    score += sum(
-                        " ".join(obj.object_id.split("_")[:-1]) in keyword
-                        for keyword in keywords
-                    )
-
-            relevance_scores[room] = score
-
-        # Sort the rooms based on relevance score
-        sorted_rooms = sorted(
-            relevance_scores.keys(),
-            key=lambda room: relevance_scores[room],
-            reverse=True,
-        )
-
-        return sorted_rooms
 
     def plot_object_to_receptacle_lines(
         self,
@@ -95,15 +101,6 @@ class Scene:
         color=None,
         modify_object_color=False,
     ):
-        """
-        Plots lines between objects and receptacles based on their relations.
-
-        Parameters:
-            object_names (list): List of object names.
-            receptacle_names (list): List of receptacle names.
-            function_name (str): Name of the relation function.
-            ax (matplotlib.axes.Axes): Axes to plot the lines on.
-        """
         for object_name in object_names:
             for room in self.rooms:
                 object_obj = room.find_object_by_id(object_name)
@@ -209,17 +206,6 @@ class Scene:
         curved=True,
         color=(1, 1, 1, 1),
     ):
-        """
-        Adds an arrow to the given line.
-
-        Parameters:
-            ax (matplotlib.axes.Axes): Axes to add the arrow to.
-            obj_loc (tuple): Location of the object.
-            room_loc (tuple): Location of the room.
-            line_style (str): Style of the line ('-' for solid, '--' for dashed).
-            curved (bool): Whether to add a curved arrow instead of a straight one.
-            color (tuple): RGBA color for the arrow. Defaults to white.
-        """
         x0, y0 = obj_loc
         x1, y1 = room_loc
         dx, dy = x1 - x0, y1 - y0
@@ -292,20 +278,6 @@ class Scene:
                 overhang=self.config.arrow.overhang,
             )
             ax.add_patch(arrow)
-
-    def redistribute_target_width_to_rooms(self, rooms_to_plot, target_width):
-        # Calculate total width of all rooms
-        total_width = sum(room.width for room in rooms_to_plot)
-
-        # Calculate redistribution factor based on target width and total width
-        redistribution_factor = target_width / total_width
-
-        # Redistribute width to each room based on their width ratios
-        redistributed_widths = [
-            room.width * redistribution_factor for room in rooms_to_plot
-        ]
-
-        return redistributed_widths
 
     def plot_rooms_linear(
         self,
@@ -442,7 +414,7 @@ class Scene:
                     )
                     current_row_width = 0
                     room_target_widths = (
-                        self.redistribute_target_width_to_rooms(
+                        redistribute_target_width_to_rooms(
                             current_rooms_to_plot, target_width
                         )
                     )
@@ -450,7 +422,7 @@ class Scene:
                         current_rooms_to_plot, room_target_widths
                     ):
                         ax = room.plot(
-                            position=(current_row_width, current_row_height),
+                            origin=(current_row_width, current_row_height),
                             ax=ax,
                             target_width=room_target_width,
                         )
@@ -478,14 +450,14 @@ class Scene:
                 room.height for room in current_rooms_to_plot
             )
             current_row_width = 0
-            room_target_widths = self.redistribute_target_width_to_rooms(
+            room_target_widths = redistribute_target_width_to_rooms(
                 current_rooms_to_plot, target_width
             )
             for room, room_target_width in zip(
                 current_rooms_to_plot, room_target_widths
             ):
                 ax = room.plot(
-                    position=(current_row_width, current_row_height),
+                    origin=(current_row_width, current_row_height),
                     ax=ax,
                     target_width=room_target_width,
                 )
@@ -607,19 +579,6 @@ class Scene:
             height_offset,
             all_mentioned_rooms,
         )
-        # Define a color palette for the lines
-        # color_palette = plt.cm.get_cmap('Set3').colors
-        color_palette = {
-            "White": "#FFFFFF",
-            "Coral": "#FF7F50",
-            "Gold": "#FFD700",
-            "Cyan": "#00FFFF",
-            "Mint Green": "#98FF98",
-            "Lavender": "#E6E6FA",
-            "Salmon": "#FA8072",
-            "Peach": "#FFDAB9",
-            "Pink": "#FFC0CB",
-        }
 
         color_index = 0
 

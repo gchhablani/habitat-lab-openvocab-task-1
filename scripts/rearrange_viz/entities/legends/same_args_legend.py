@@ -1,12 +1,18 @@
+from matplotlib.patches import FancyBboxPatch
 import matplotlib.pyplot as plt
 import networkx as nx
-from .object import Object
-from .receptacle import Receptacle
+from ..object import Object
+from ..receptacle import Receptacle
 
-class IsNextToLegend:
-    def __init__(self, config, is_next_tos, receptacle_icon_mapping):
+class SameArgsLegend:
+    def __init__(self, config, same_args, receptacle_icon_mapping):
         self.config = config
-        self.is_next_tos = is_next_tos
+        # same_args is a list of lists
+        # each inner list is a list of tuples
+        # the first item in each tuple is supposed to be the "same" element
+        # the second item in each tuple is the thing to be on the other side
+        # each item has its type described in the tuple
+        self.same_args = same_args
         self.receptacle_icon_mapping = receptacle_icon_mapping
 
     @property
@@ -17,31 +23,40 @@ class IsNextToLegend:
         # Create a bipartite graph and separate the entities into two different sets
         G = nx.Graph()
         edge_styles = {}
-        for is_next_to in self.is_next_tos:
-            for entity_a in is_next_to[0]:
-                node_label_a = f"{entity_a[0]}"
-                if not G.has_node(node_label_a):
-                    G.add_node(node_label_a, entity=entity_a)
+        for same_args_data in self.same_args:
+            left_elements = set()
+            right_elements = set()
+            for tup in same_args_data:
+                left_elements = left_elements.union(set(tup[0]))
+                right_elements = right_elements.union(set(tup[1]))
+            left_elements = list(left_elements)
+            right_elements = list(right_elements)
 
-            for entity_b in is_next_to[1]:
-                node_label_b = f"{entity_b[0]}"
-                if not G.has_node(node_label_b):
-                    G.add_node(node_label_b, entity=entity_b)
-                
-                # Determine the line style
-                line_style = 'dotted' if is_next_to[2] < len(is_next_to[0]) or is_next_to[2] < len(is_next_to[1]) else 'solid'
+            # TODO: Think if we need a better logic here.
+            # Currently just picking one of the elements here.
+            # left element is the common element(s)
+            left_element = left_elements[0]
+            if not G.has_node(left_element[0]):
+                G.add_node(left_element[0], entity=left_element, bipartite=0)
+            for item in right_elements:
+                node_label = item[0]
+                if not G.has_node(node_label):
+                    G.add_node(node_label, entity=item, bipartite=1)
+                G.add_edge(left_element[0], node_label)
 
-                # Add edges between all pairs of nodes in entity_a and entity_b
-                for entity_a in is_next_to[0]:
-                    node_label_a = f"{entity_a[0]}"
-                    G.add_edge(node_label_a, node_label_b)
-                    edge_styles[(node_label_a, node_label_b)] = line_style
+        # NOTE: This assertion is not always true
+        # assert nx.is_bipartite(G), "The graph is not bipartite"
 
-        # Check if the graph is bipartite
-        assert nx.is_bipartite(G), "The graph is not bipartite"
-        
+        left_set = set()
+        right_set = set()
         # Get the two sets of nodes
-        left_set, right_set = nx.bipartite.sets(G)
+        for idx, (label, data) in enumerate(G.nodes(data=True)):
+            if data["bipartite"] == 1:
+                right_set = right_set.union({label})
+            else:
+                if label == left_element[0]:
+                    left_set = left_set.union({label})
+
         # Get maximum height based on left and right sets
         
         # TODO: Think of better logic to calculate height here
@@ -92,7 +107,13 @@ class IsNextToLegend:
                     left_midpoint - self.config.object.width / 2,
                     left_current_height - self.config.object.height / 2,
                 )
-            else:
+                left_entities[f"{entity_id}"] = left_entity
+                left_entity.plot(
+                    ax,
+                    left_origin,
+                )
+                left_current_height -= spacing
+            elif entity_type == "receptacle":
                 icon_path = self.receptacle_icon_mapping.get(
                     entity_id, "receptacles/chair@2x.png"
                 )
@@ -103,14 +124,37 @@ class IsNextToLegend:
                     left_midpoint - left_entity.width / 2,
                     left_current_height - left_entity.height / 2,
                 )
-            left_entities[f"{entity_id}"] = left_entity
-            left_entity.plot(
-                ax,
-                left_origin,
-            )
-            left_current_height -= spacing
-    
-        
+                left_entities[f"{entity_id}"] = left_entity
+                left_entity.plot(
+                    ax,
+                    left_origin,
+                )
+                left_current_height -= spacing
+            else:
+                width = 200
+                height = 100
+                left_origin = (
+                    left_midpoint - width / 2,
+                    left_current_height - height / 2,
+                )
+                left_entity = FancyBboxPatch(
+                    left_origin,
+                    width,
+                    height,
+                    edgecolor="white",
+                    facecolor="#3E4C60",
+                    linewidth=1,
+                    linestyle="-",
+                    alpha=1.0,
+                )
+                left_entity_mid = (
+                    left_origin[0] + width/2,
+                    left_origin[1] + height/2
+                )
+                ax.add_patch(left_entity)
+                left_entities[f"{entity_id}"] = left_entity
+                left_current_height -= spacing
+
         right_entities = {}
         # Plot the right nodes
         right_midpoint = (
@@ -128,7 +172,13 @@ class IsNextToLegend:
                     right_midpoint - self.config.object.width / 2,
                     right_current_height - self.config.object.height / 2,
                 )
-            else:
+                right_entities[f"{entity_id}"] = right_entity
+                right_entity.plot(
+                    ax,
+                    right_origin,
+                )
+                right_current_height -= spacing
+            elif entity_type == "receptacle":
                 icon_path = self.receptacle_icon_mapping.get(
                     entity_id, "receptacles/chair@2x.png"
                 )
@@ -139,41 +189,67 @@ class IsNextToLegend:
                     right_midpoint - right_entity.width / 2,
                     right_current_height - right_entity.height / 2,
                 )
-            right_entities[f"{entity_id}"] = right_entity
-            right_entity.plot(
-                ax,
-                right_origin,
-            )
-            right_current_height -= spacing
+                right_entities[f"{entity_id}"] = right_entity
+                right_entity.plot(
+                    ax,
+                    right_origin,
+                )
+                right_current_height -= spacing
+            else:
+                width = 200
+                height = 100
+                right_origin = (
+                    right_midpoint - width / 2,
+                    right_current_height - height / 2,
+                )
+                right_entity = FancyBboxPatch(
+                    right_origin,
+                    width,
+                    height,
+                    edgecolor="white",
+                    facecolor="#3E4C60",
+                    linewidth=1,
+                    linestyle="-",
+                    alpha=1.0,
+                )
+                right_entity_mid = (
+                    right_origin[0] + width/2,
+                    right_origin[1] + height/2
+                )
+                ax.add_patch(right_entity)
+                right_entities[f"{entity_id}"] = right_entity
+                right_current_height -= spacing
+                
 
         # Plot lines from left entities to right entities
         for edge in G.edges():
             node1, node2 = edge
-            if (node1, node2) in edge_styles:
-                line_style = edge_styles[(node1, node2)]
-            else:
-                line_style = edge_styles[(node2, node1)]
+            line_style='solid'
             if node1 in left_entities:
                 left_entity = left_entities[node1]
             elif node1 in right_entities:
                 right_entity = right_entities[node1]
             else:
-                raise RuntimeError("node1 not in left or right entities")
+                raise RuntimeError(f"node1: {node1} not in left or right entities")
             if node2 in left_entities:
                 left_entity = left_entities[node2]
             elif node2 in right_entities:
                 right_entity = right_entities[node2]
             else:
-                raise RuntimeError("node2 not in left or right entities")
+                raise RuntimeError(f"node2: {node2} not in left or right entities")
             left_center = (
                 left_entity.center_position
                 if isinstance(left_entity, Object)
                 else left_entity.center_placeholder_position
+                if isinstance(left_entity, Receptacle)
+                else left_entity_mid
             )
             right_center = (
                 right_entity.center_position
                 if isinstance(right_entity, Object)
                 else right_entity.center_placeholder_position
+                if isinstance(right_entity, Receptacle)
+                else right_entity_mid
             )
             ax.plot(
                 [left_center[0], right_center[0]],
@@ -189,7 +265,7 @@ class IsNextToLegend:
             ax.text(
                 position[0] + self.config.horizontal_margin + self.config.width / 2,
                 position[1] + mx_height + self.config.bottom_pad,
-                "next to",
+                "same arg",
                 horizontalalignment="center",
                 verticalalignment="top",
                 fontsize=self.config.text_size,

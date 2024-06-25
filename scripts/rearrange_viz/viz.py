@@ -234,6 +234,8 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
 
     # Handle Propositions
     propositions = run_data["evaluation_propositions"]
+    # all_functions = set(proposition["function_name"] for proposition in propositions)
+    # assert "is_next_to" in all_functions, "is_next_to not in episode data"
     for proposition in propositions:
         if proposition["function_name"] not in [
             "is_on_top",
@@ -310,6 +312,43 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                 print(
                     f"For episodie_id:{episode_id}, len of propositions: {len(propositions)} and unique terminal constraints {unique_terminal_constraints}"
                 )
+        elif constraint["type"] == "SameArgConstraint":
+            same_args = []
+            for proposition_index, arg_name in zip(constraint["args"]["proposition_indices"], constraint["args"]["arg_names"]):
+                if arg_name == "object_handles" or arg_name == "receptacle_handles":
+                    if arg_name == "object_handles":
+                        left_name = "object_names"
+                        if "receptacle_names" in propositions[proposition_index]["args"]:
+                            right_name = "receptacle_names"
+                        elif "room_names" in propositions[proposition_index]["args"]:
+                            right_name = "room_names"
+                        else:
+                            raise NotImplementedError(f"Not implemented for `arg_name`: {arg_name} and no receptacle or room names.")
+                    elif arg_name == "receptacle_handles":
+                        left_name = "receptacle_names"
+                        right_name = "object_names"
+
+                    same_args.append(
+                        (
+                            [(item, left_name.split("_")[0]) for item in propositions[proposition_index]["args"][left_name]],
+                            [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
+                        )
+                    )
+                elif arg_name == "entity_handles_a" or arg_name == "entity_handles_b":
+                    entity_index = arg_name.split('_')[-1]
+                    opposite_entity_index = "b" if entity_index == "a" else "b"
+                    same_args.append(
+                        (
+                            propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"],
+                            propositions[proposition_index]["args"][f"entity_handles_{opposite_entity_index}_names_and_types"],
+                        )
+                    )
+                else:
+                    raise NotImplementedError(
+                        f"Not implemented SameArg for arg name: {arg_name}"
+                    )
+            constraint["same_args_data"] = same_args 
+            print(constraint["same_args_data"])       
         else:
             raise NotImplementedError(
                 f"Constraint type {constraint['type']} is not handled currently."
