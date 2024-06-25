@@ -83,7 +83,7 @@ class Object:
                 ),
             )
         else:
-            object_rect = FancyBboxPatch(
+            self.object_rect = FancyBboxPatch(
                 (position[0], position[1]),
                 self.config.width,
                 self.config.height,
@@ -99,7 +99,7 @@ class Object:
                 alpha=1.0,
             )
 
-            ax.add_patch(object_rect)
+            ax.add_patch(self.object_rect)
 
         self.center_position = (
             position[0] + self.config.width / 2,
@@ -119,6 +119,7 @@ class Object:
             ha="center",
             va="center",
             fontsize=self.config.text_size,
+            zorder=float('inf'),
         )
 
         # Calculate the coordinates based on the center position
@@ -151,3 +152,7 @@ class Object:
             return fig, ax
         else:
             return ax
+
+    def change_rectangle_color(self, color):
+        self.object_rect.set_facecolor(color)
+        plt.gcf().canvas.draw()

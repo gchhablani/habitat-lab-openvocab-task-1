@@ -22,6 +22,7 @@ class Receptacle:
             icon_path (str): Path to the icon image file representing the receptacle.
         """
         self.config = config.receptacle
+        self.object_config = config.object
         self.receptacle_id = receptacle_id
         self.icon_path = icon_path
         self.center_placeholder_position = None  # Initialize center position
@@ -154,7 +155,10 @@ class Receptacle:
             self.top_placeholder_position[1]
             - self.config.placeholder.height / 2,
         )
-        self.new_top_item_position = self.top_placeholder_origin
+        self.new_top_item_position = (
+            self.top_placeholder_origin[0],
+            self.top_placeholder_origin[1] + abs(self.object_config.text_margin) + self.object_config.bottom_text_extra_margin
+        )
 
         properties = receptacle_properties[
             "_".join(self.receptacle_id.split("_")[:-1])
@@ -167,8 +171,8 @@ class Receptacle:
             self.top_placeholder = Placeholder(self.config)
             ax = self.top_placeholder.plot(ax, self.top_placeholder_origin)
             self.new_top_item_position = (
-                self.top_placeholder_origin[0],
-                self.top_placeholder_origin[1]
+                self.new_top_item_position[0],
+                self.new_top_item_position[1]
                 + self.config.placeholder.height,
             )
         if self.plot_center_placeholder and properties["is_inside"]:

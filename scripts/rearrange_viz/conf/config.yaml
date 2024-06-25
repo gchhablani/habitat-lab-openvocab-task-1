@@ -2,7 +2,8 @@ defaults:
   - object: default
 
 object:
-  text_margin: 115
+  text_margin: -115
+  bottom_text_extra_margin: 50
   width: 80
   height: 80
   text_size: 11
@@ -48,11 +49,17 @@ room:
 
 scene:
   is_next_to:
+    text_size: 12
+    linewidth: 2
+    endpoint_size: 50
+    top_pad: 80
+    bottom_pad: 80
     width: 1500
     height: 1000
     horizontal_margin: 300
     object:
-      text_margin: 115
+      text_margin: -115
+      bottom_text_extra_margin: 50
       width: 80
       height: 80
       text_size: 11
@@ -60,12 +67,16 @@ scene:
       max_chars_per_line: 9
     receptacle:
       horizontal_margin: 5
-      target_height: 60 # 0.35 * full_height
-
+      target_height: 300 # 0.35 * full_height
+      placeholder:
+        width: 80
+        height: 80
+        rounding_size: 10
+      placeholder_margin: 0
   arrow:
     head_length: 25
     head_width: 50
-    linewidth: 1
+    linewidth: 2
     overhang: 0.9
   target_width: 6000
   instruction_text_size: 20

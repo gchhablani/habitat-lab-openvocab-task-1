@@ -4,6 +4,7 @@ from matplotlib.patches import FancyArrow, PathPatch
 from matplotlib.path import Path
 
 from .is_next_to_legend import IsNextToLegend
+from .same_args_legend import SameArgsLegend
 from .utils import wrap_text
 
 
@@ -92,6 +93,7 @@ class Scene:
         function_name,
         ax,
         color=None,
+        modify_object_color=False,
     ):
         """
         Plots lines between objects and receptacles based on their relations.
@@ -106,6 +108,8 @@ class Scene:
             for room in self.rooms:
                 object_obj = room.find_object_by_id(object_name)
                 if object_obj:
+                    if modify_object_color:
+                        object_obj.change_rectangle_color(color)
                     for receptacle_name in receptacle_names:
                         receptacle_objs = []
                         for r_room in self.rooms:
@@ -154,7 +158,7 @@ class Scene:
                                 )
 
     def plot_object_to_room_lines(
-        self, object_names, room_names, number, ax, color=None
+        self, object_names, room_names, number, ax, color=None, modify_object_color=False,
     ):
         """
         Plots lines between objects and rooms based on their relations.
@@ -170,6 +174,8 @@ class Scene:
             for room in self.rooms:
                 object_obj = room.find_object_by_id(object_name)
                 if object_obj:
+                    if modify_object_color:
+                        object_obj.change_rectangle_color(color)
                     source_objects.append(object_obj)
         for room_name in room_names:
             for r_room in self.rooms:
@@ -496,6 +502,7 @@ class Scene:
         self,
         propositions,
         receptacle_icon_mapping,
+        same_args_data,
         show_instruction=True,
         height_offset=0,
         initial_ax=None,
@@ -508,7 +515,6 @@ class Scene:
         mentioned_rooms = []
         is_next_tos = []
         for prop in propositions:
-            print(prop)
             if prop["function_name"] in ["is_on_top", "is_inside"]:
                 mentioned_objs += prop["args"]["object_names"]
                 if prop["function_name"] == "is_on_top":
@@ -640,6 +646,7 @@ class Scene:
                             function_name,
                             ax,
                             color,
+                            modify_object_color=True
                         )
                     elif function_name == "is_in_room":
                         room_names = args["room_names"]
@@ -649,47 +656,69 @@ class Scene:
                             number,
                             ax,
                             color,
+                            modify_object_color=True
                         )
                 # else:
                 #     raise NotImplementedError(f"Not implemented line plotting for {function_name}.")
 
+        # Plot the legend
+        if is_next_tos or same_args_data:
+            if is_next_tos:
+                self.legend = IsNextToLegend(
+                    self.config.is_next_to, is_next_tos, receptacle_icon_mapping
+                )
+                self.legend.plot(
+                    (
+                        self.width,
+                        (height_lower + height_upper) / 2
+                        - self.config.is_next_to.height / 2,
+                    ),
+                    ax,
+                )
+            if same_args_data:
+                self.same_args_legend = SameArgsLegend(
+                    self.config.is_next_to, same_args_data, receptacle_icon_mapping
+                )
+                self.same_args_legend.plot(
+                    (
+                        self.width,
+                        (height_lower + height_upper) / 2
+                        + self.config.is_next_to.height / 2,
+                    ),
+                    ax,
+                )
+            if hasattr(self, "legend") or hasattr(self, "same_args_legend"):
+                width = self.legend.width if hasattr(self, "legend") else self.same_args_legend.width  
+                ax.set_xlim(0 - 300, self.width + 300 + width + 300)
+
+        # Set axis limits
+        else:
+            ax.set_xlim(0, self.width)
+        ax.set_ylim(height_lower, height_upper)
+        
+        
         # Add instruction on top
         wrapped_text = ""
         if self.instruction and show_instruction:
             wrapped_text = wrap_text(
                 self.instruction, self.config.max_chars_per_line
             )
-
+            if is_next_tos:
+                frac = 0.5 * (self.width + 600) /(self.width + 300 + self.config.is_next_to.width + 300 + 300)
+            else:
+                frac = 0.5
             # TODO: fix the center of text
             ax.text(
-                0.5,
+                frac,
                 self.config.instruction_relative_height,
                 wrapped_text,
                 horizontalalignment="center",
                 verticalalignment="bottom",
                 transform=ax.transAxes,
                 fontsize=self.config.instruction_text_size,
+                zorder=float('inf'),
             )
 
-        # Plot the legend
-        if is_next_tos:
-            self.legend = IsNextToLegend(
-                self.config.is_next_to, is_next_tos, receptacle_icon_mapping
-            )
-            self.legend.plot(
-                (
-                    self.width,
-                    (height_lower + height_upper) / 2
-                    - self.config.is_next_to.height / 2,
-                ),
-                ax,
-            )
-            ax.set_xlim(0 - 300, self.width + 300 + self.legend.width + 300)
-
-        # Set axis limits
-        else:
-            ax.set_xlim(0, self.width)
-        ax.set_ylim(height_lower, height_upper)
         if initial_ax is None:
             return fig, ax, height_lower, height_upper, wrapped_text
         else:
@@ -718,9 +747,13 @@ class Scene:
             propositions is not None
         ), "Plotting without propositions is not supported."
         toposort = []
+        all_same_args = []
         for constraint in constraints:
             if constraint["type"] == "TemporalConstraint":
                 toposort = constraint["toposort"]
+            elif constraint["type"] == "SameArgConstraint":
+                all_same_args.append(constraint["same_args_data"])
+
         if toposort:
 
             # NOTE: All the next bits are only used to get a list of all the mentioned rooms to keep them in front!
@@ -746,6 +779,8 @@ class Scene:
                     mentioned_rooms += prop["args"]["room_names"]
                 elif prop["function_name"] == "is_on_floor":
                     mentioned_objs += prop["args"]["object_names"]
+                elif prop["function_name"] == "is_next_to":
+                    continue
                 else:
                     raise NotImplementedError(
                         f"Not implemented for function with name: {prop['function_name']}."
@@ -784,6 +819,7 @@ class Scene:
                     self.plot_for_propositions(
                         current_propositions,
                         receptacle_icon_mapping=receptacle_icon_mapping,
+                        same_args_data=all_same_args,
                         show_instruction=show_instruction,
                         height_offset=min_lower,
                         initial_ax=ax,
@@ -810,6 +846,7 @@ class Scene:
                 self.plot_for_propositions(
                     propositions,
                     receptacle_icon_mapping=receptacle_icon_mapping,
+                    same_args_data=all_same_args,
                     show_instruction=not force_hide_instructions,
                 )
             )

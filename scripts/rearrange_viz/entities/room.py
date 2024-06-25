@@ -229,6 +229,7 @@ class Room:
             ha="center",
             va="bottom",
             fontsize=self.config.text_size,
+            zorder=float('inf'),
         )
 
         self.room_height = (
@@ -293,7 +294,7 @@ class Room:
                     ax = obj.plot(ax, obj_position)
                     current_receptacle.new_top_item_position = (
                         obj_position[0],
-                        obj.text_position[1] + obj.config.height,
+                        current_receptacle.new_top_item_position[1] + abs(obj.config.text_margin) + 2 * obj.config.height,
                     )
 
         else:
