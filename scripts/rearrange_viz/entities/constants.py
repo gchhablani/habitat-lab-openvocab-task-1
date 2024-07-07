@@ -191,3 +191,5 @@ color_palette = {
     "Peach": "#FFDAB9",
     "Pink": "#FFC0CB",
 }
+
+BACKGROUND_COLOR = "#3E4C60"

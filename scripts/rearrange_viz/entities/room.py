@@ -80,18 +80,15 @@ class Room:
                     and obj.object_id in self.object_to_recep.keys()
                 ):  
                     receptacle_id = self.object_to_recep[obj.object_id]
-                    print(obj.object_id, receptacle_id)
                     current_receptacle = self.find_receptacle_by_id(
                         receptacle_id
                     )
                     # Need to maintain temporary max height as we do not need absolute position
                     if not hasattr(current_receptacle, 'temp_mx_height'): 
                         current_receptacle.temp_mx_height = current_receptacle.height
-                        print("current height: ", current_receptacle.height)
                     current_receptacle.temp_mx_height += abs(obj.config.text_margin) + 2 * obj.config.height
                     # We take max of all top item positions for now
                     self.room_height = max(self.room_height, current_receptacle.temp_mx_height)
-                    print("Room height: ", self.room_height)
         self.room_height = self.room_height + self.config.bottom_pad + self.config.top_pad
         self.height = self.room_height + 2 * self.config.vertical_margin
         

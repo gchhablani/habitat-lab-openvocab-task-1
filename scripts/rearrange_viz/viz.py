@@ -129,7 +129,6 @@ def plot_scene(
     constraints,
     receptacle_icon_mapping,
     instruction=None,
-    force_hide_instructions=False,
     save_path=None,
     object_to_recep=None,
 ):
@@ -173,23 +172,21 @@ def plot_scene(
         receptacle_icon_mapping,
         propositions,
         constraints,
-        force_hide_instructions,
     )
     width_inches = config.width_inches
     fig.set_size_inches(
         width_inches, (scene.height / scene.width) * width_inches
     )
-    if force_hide_instructions:
-        top = 0.95
+
+    if num_instruction_lines == 1:
+        top = 0.85
+    elif num_instruction_lines == 2:
+        top = 0.8
+    elif num_instruction_lines == 3:
+        top = 0.75
     else:
-        if num_instruction_lines == 1:
-            top = 0.85
-        elif num_instruction_lines == 2:
-            top = 0.8
-        elif num_instruction_lines == 3:
-            top = 0.75
-        else:
-            top = 0.7
+        top = 0.7
+
     plt.subplots_adjust(
         right=0.98, left=0.02, bottom=0.05, top=top, wspace=0.1, hspace=0.1
     )
@@ -411,11 +408,6 @@ def parse_arguments():
         default="Visualization-Rearrangement",
     )
     parser.add_argument(
-        "--force-hide-instructions",
-        action="store_true",
-        help="Flag to force hide instructions",
-    )
-    parser.add_argument(
         "--sample-size",
         type=int,
         help="If only a random subset of all the episodes is to be visualized, the sample size.",
@@ -571,7 +563,6 @@ def main():
                     constraints,
                     receptacle_icon_mapping,
                     instruction=run_data["instruction"],
-                    force_hide_instructions=args.force_hide_instructions,
                     save_path=os.path.join(
                         save_directory, f"viz_{episode_id}.png"
                     ),
