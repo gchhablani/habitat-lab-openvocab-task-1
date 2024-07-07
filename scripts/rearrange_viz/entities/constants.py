@@ -179,3 +179,15 @@ receptacle_properties = {
     "toilet": {"is_on_top": True, "is_inside": True, "is_same": False},
     "shower": {"is_on_top": True, "is_inside": False, "is_same": False},
 }
+
+# Define a color palette for the propositions
+color_palette = {
+    "Coral": "#FF7F50",
+    "Gold": "#FFD700",
+    "Cyan": "#00FFFF",
+    "Mint Green": "#98FF98",
+    "Lavender": "#E6E6FA",
+    "Salmon": "#FA8072",
+    "Peach": "#FFDAB9",
+    "Pink": "#FFC0CB",
+}

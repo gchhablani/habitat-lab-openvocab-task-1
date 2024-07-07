@@ -15,6 +15,7 @@ class Room:
         in_proposition=False,
         object_to_recep=None,
     ):
+        self.global_config = config
         self.config = config.room
         self.room_id = room_id
 
@@ -66,15 +67,32 @@ class Room:
 
 
     def init_heights(self):
+        # Init with min receptacle height
         self.room_height = (
-            (
-                self.config.full_height
-                if self.use_full_height
-                else self.config.half_height
-            )
-            + self.config.bottom_pad
-            + self.config.top_pad
+            self.global_config.receptacle.target_height
         )
+        if self.objects:
+            # NOTE: Here we are assuming that all objects have some initial recep
+            # Might not work the best if this assumption is false
+            for obj in self.objects:
+                if (
+                    self.object_to_recep is not None
+                    and obj.object_id in self.object_to_recep.keys()
+                ):  
+                    receptacle_id = self.object_to_recep[obj.object_id]
+                    print(obj.object_id, receptacle_id)
+                    current_receptacle = self.find_receptacle_by_id(
+                        receptacle_id
+                    )
+                    # Need to maintain temporary max height as we do not need absolute position
+                    if not hasattr(current_receptacle, 'temp_mx_height'): 
+                        current_receptacle.temp_mx_height = current_receptacle.height
+                        print("current height: ", current_receptacle.height)
+                    current_receptacle.temp_mx_height += abs(obj.config.text_margin) + 2 * obj.config.height
+                    # We take max of all top item positions for now
+                    self.room_height = max(self.room_height, current_receptacle.temp_mx_height)
+                    print("Room height: ", self.room_height)
+        self.room_height = self.room_height + self.config.bottom_pad + self.config.top_pad
         self.height = self.room_height + 2 * self.config.vertical_margin
         
     def init_size(self):
@@ -105,11 +123,6 @@ class Room:
         return None
     
     def plot_objects(self, ax, actual_origin):
-        self.room_height = (
-            self.config.full_height
-            + self.config.bottom_pad
-            + self.config.top_pad
-        )
         if self.objects:
             # Handle non mapped objects
             # Calculate initial offset for objects considering left margin, horizontal padding, and spacing objects evenly
@@ -150,7 +163,7 @@ class Room:
                             offset,
                             actual_origin[1]
                             + self.config.bottom_pad
-                            + self.config.full_height
+                            + self.height
                             * self.config.objects_height,
                         ),
                     )
@@ -169,15 +182,6 @@ class Room:
                         obj_position[0],
                         current_receptacle.next_top_item_position[1] + abs(obj.config.text_margin) + 2 * obj.config.height,
                     )
-
-        else:
-            if not self.use_full_height:
-                self.room_height = (
-                    self.config.half_height
-                    + self.config.bottom_pad
-                    + self.config.top_pad
-                )
-        self.height = self.room_height + 2 * self.config.vertical_margin
 
     def plot_receptacles(self, ax, actual_origin):
         # Calculate initial offset considering left margin and horizontal padding
@@ -232,11 +236,8 @@ class Room:
             actual_origin[1]
             + self.config.bottom_pad
             + (
-                self.config.placeholder_height_if_full
-                * self.config.full_height
-                if self.use_full_height
-                else self.config.placeholder_height_if_half
-                * self.config.half_height
+                self.config.placeholder_height
+                * self.height
             ),
         )
         if self.plot_placeholder:

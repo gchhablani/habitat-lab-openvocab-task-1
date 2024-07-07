@@ -248,14 +248,14 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                 f'Not implemented for function_name {proposition["function_name"]}'
             )
         if "object_handles" in proposition["args"]:
-            if (
-                proposition["args"]["number"] > 1
-                and len(proposition["args"]["object_handles"])
-                != proposition["args"]["number"]
-            ):
-                raise NotImplementedError(
-                    f'Given number {proposition["args"]["number"]} does not match number of objects {len(proposition["args"]["object_handles"])} in proposition. Not handled currently.'
-                )
+            # if (
+            #     proposition["args"]["number"] > 1
+            #     and len(proposition["args"]["object_handles"])
+            #     != proposition["args"]["number"]
+            # ):
+            #     raise NotImplementedError(
+            #         f'Given number {proposition["args"]["number"]} does not match number of objects {len(proposition["args"]["object_handles"])} in proposition. Not handled currently.'
+            #     )
             proposition["args"]["object_names"] = []
             for object_handle in proposition["args"]["object_handles"]:
                 proposition["args"]["object_names"].append(
@@ -310,7 +310,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
             )
             if len(propositions) != unique_terminal_constraints:
                 print(
-                    f"For episodie_id:{episode_id}, len of propositions: {len(propositions)} and unique terminal constraints {unique_terminal_constraints}"
+                    f"For episode_id:{episode_id}, len of propositions: {len(propositions)} and unique terminal constraints {unique_terminal_constraints}"
                 )
         elif constraint["type"] == "SameArgConstraint":
             same_args = []
@@ -343,12 +343,19 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                             propositions[proposition_index]["args"][f"entity_handles_{opposite_entity_index}_names_and_types"],
                         )
                     )
+                elif arg_name == "room_ids":
+                    right_name = "object_names"
+                    same_args.append(
+                        (
+                            [(item, arg_name.split("_")[0]) for item in propositions[proposition_index]["args"][arg_name]],
+                            [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
+                        )
+                    )
                 else:
                     raise NotImplementedError(
                         f"Not implemented SameArg for arg name: {arg_name}"
                     )
-            constraint["same_args_data"] = same_args 
-            print(constraint["same_args_data"])       
+            constraint["same_args_data"] = same_args
         else:
             raise NotImplementedError(
                 f"Constraint type {constraint['type']} is not handled currently."

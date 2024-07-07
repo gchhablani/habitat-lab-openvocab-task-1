@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from ..object import Object
 from ..receptacle import Receptacle
+from ..tiny_room import TinyRoom
+
 
 class SameArgsLegend:
     def __init__(self, config, same_args, receptacle_icon_mapping):
@@ -20,6 +22,7 @@ class SameArgsLegend:
         return self.config.width
 
     def plot(self, position=(0, 0), ax=None):
+        print(self.same_args)
         # Create a bipartite graph and separate the entities into two different sets
         G = nx.Graph()
         edge_styles = {}
@@ -47,15 +50,16 @@ class SameArgsLegend:
         # NOTE: This assertion is not always true
         # assert nx.is_bipartite(G), "The graph is not bipartite"
 
+        # print(left_element[0])
         left_set = set()
         right_set = set()
         # Get the two sets of nodes
         for idx, (label, data) in enumerate(G.nodes(data=True)):
             if data["bipartite"] == 1:
-                right_set = right_set.union({label})
+                left_set = left_set.union({label})
             else:
-                if label == left_element[0]:
-                    left_set = left_set.union({label})
+                # if label == left_element[0]:
+                right_set = right_set.union({label})
 
         # Get maximum height based on left and right sets
         
@@ -131,28 +135,18 @@ class SameArgsLegend:
                 )
                 left_current_height -= spacing
             else:
-                width = 200
-                height = 100
+                left_entity = TinyRoom(
+                    self.config, entity_id
+                )
                 left_origin = (
-                    left_midpoint - width / 2,
-                    left_current_height - height / 2,
+                    left_midpoint - left_entity.width / 2,
+                    left_current_height - left_entity.height / 2,
                 )
-                left_entity = FancyBboxPatch(
-                    left_origin,
-                    width,
-                    height,
-                    edgecolor="white",
-                    facecolor="#3E4C60",
-                    linewidth=1,
-                    linestyle="-",
-                    alpha=1.0,
-                )
-                left_entity_mid = (
-                    left_origin[0] + width/2,
-                    left_origin[1] + height/2
-                )
-                ax.add_patch(left_entity)
                 left_entities[f"{entity_id}"] = left_entity
+                left_entity.plot(
+                    ax,
+                    left_origin,
+                )
                 left_current_height -= spacing
 
         right_entities = {}
@@ -196,28 +190,18 @@ class SameArgsLegend:
                 )
                 right_current_height -= spacing
             else:
-                width = 200
-                height = 100
+                right_entity = TinyRoom(
+                    self.config, entity_id
+                )
                 right_origin = (
-                    right_midpoint - width / 2,
-                    right_current_height - height / 2,
+                    right_midpoint - right_entity.width / 2,
+                    right_current_height - right_entity.height / 2,
                 )
-                right_entity = FancyBboxPatch(
-                    right_origin,
-                    width,
-                    height,
-                    edgecolor="white",
-                    facecolor="#3E4C60",
-                    linewidth=1,
-                    linestyle="-",
-                    alpha=1.0,
-                )
-                right_entity_mid = (
-                    right_origin[0] + width/2,
-                    right_origin[1] + height/2
-                )
-                ax.add_patch(right_entity)
                 right_entities[f"{entity_id}"] = right_entity
+                right_entity.plot(
+                    ax,
+                    right_origin
+                )
                 right_current_height -= spacing
                 
 
@@ -242,14 +226,14 @@ class SameArgsLegend:
                 if isinstance(left_entity, Object)
                 else left_entity.center_placeholder_position
                 if isinstance(left_entity, Receptacle)
-                else left_entity_mid
+                else left_entity.center_position
             )
             right_center = (
                 right_entity.center_position
                 if isinstance(right_entity, Object)
                 else right_entity.center_placeholder_position
                 if isinstance(right_entity, Receptacle)
-                else right_entity_mid
+                else right_entity.center_position
             )
             ax.plot(
                 [left_center[0], right_center[0]],
@@ -265,7 +249,7 @@ class SameArgsLegend:
             ax.text(
                 position[0] + self.config.horizontal_margin + self.config.width / 2,
                 position[1] + mx_height + self.config.bottom_pad,
-                "same arg",
+                "same as",
                 horizontalalignment="center",
                 verticalalignment="top",
                 fontsize=self.config.text_size,

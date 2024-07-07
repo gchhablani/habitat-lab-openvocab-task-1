@@ -5,79 +5,9 @@ from matplotlib.path import Path
 
 from .legends.is_next_to_legend import IsNextToLegend
 from .legends.same_args_legend import SameArgsLegend
-from .utils import wrap_text
+from .utils import wrap_text, sort_rooms, redistribute_target_width_to_rooms
+from .constants import color_palette
 
-# Define a color palette for the lines
-# color_palette = plt.cm.get_cmap('Set3').colors
-color_palette = {
-    "Coral": "#FF7F50",
-    "Gold": "#FFD700",
-    "Cyan": "#00FFFF",
-    "Mint Green": "#98FF98",
-    "Lavender": "#E6E6FA",
-    "Salmon": "#FA8072",
-    "Peach": "#FFDAB9",
-    "Pink": "#FFC0CB",
-}
-        
-def sort_rooms(rooms, instruction):
-    # Sorts the rooms based on "relevance"
-    # Uses keyword matching with the instruction and room + receptacle + object names
-    if not instruction:
-        return rooms
-
-    # Split instruction string into words and exclude "room"
-    keywords = [word.lower().strip(".") for word in instruction.split()]
-
-    # Create a dictionary to hold the rooms and their relevance score
-    relevance_scores = {}
-
-    for room in rooms:
-        score = sum(
-            " ".join(room.room_id.split("_")[:-1]) in keyword
-            for keyword in keywords
-        )
-
-        # Consider receptacles in the score calculation
-        for receptacle in room.receptacles:
-            score += sum(
-                " ".join(receptacle.receptacle_id.split("_")[:-1])
-                in keyword
-                for keyword in keywords
-            )
-
-        # Consider objects in the score calculation
-        if room.objects:
-            for obj in room.objects:
-                score += sum(
-                    " ".join(obj.object_id.split("_")[:-1]) in keyword
-                    for keyword in keywords
-                )
-
-        relevance_scores[room] = score
-
-    # Sort the rooms based on relevance score
-    sorted_rooms = sorted(
-        relevance_scores.keys(),
-        key=lambda room: relevance_scores[room],
-        reverse=True,
-    )
-
-    return sorted_rooms
-
-def redistribute_target_width_to_rooms(rooms_to_plot, target_width):
-    # Calculate total width of all rooms
-    total_width = sum(room.width for room in rooms_to_plot)
-
-    # Calculate redistribution factor based on target width and total width
-    redistribution_factor = target_width / total_width
-
-    # Redistribute width to each room based on their width ratios
-    redistributed_widths = [
-        room.width * redistribution_factor for room in rooms_to_plot
-    ]
-
-    return redistributed_widths
 
 class Scene:
     def __init__(self, config, rooms, instruction=""):
@@ -118,53 +48,31 @@ class Scene:
 
                         for receptacle_obj in receptacle_objs:
                             if function_name == "is_inside":
-                                if len(object_names) > number:
-                                    line_style = (
-                                        0,
-                                        (5, 10),
-                                    )  # Dotted line for multiple objects
-                                else:
-                                    line_style = (
-                                        "-"  # Solid line for single object
-                                    )
-                                self.add_arrow(
-                                    ax,
-                                    object_obj.center_position,
-                                    receptacle_obj.center_placeholder_position,
-                                    line_style,
-                                    curved=True,
-                                    color=color,
+                                arrow_dest_position = receptacle_obj.center_placeholder_position
+                            else:
+                                arrow_dest_position = receptacle_obj.top_placeholder_position
+                            
+                            if len(object_names) > number:
+                                line_style = (
+                                    0,
+                                    (5, 10),
+                                )  # Dotted line for multiple objects
+                            else:
+                                line_style = (
+                                    "-"  # Solid line for single object
                                 )
-                            elif function_name == "is_on_top":
-                                if len(object_names) > number:
-                                    line_style = (
-                                        0,
-                                        (5, 10),
-                                    )  # Dotted line for multiple objects
-                                else:
-                                    line_style = (
-                                        "-"  # Solid line for single object
-                                    )
-                                self.add_arrow(
-                                    ax,
-                                    object_obj.center_position,
-                                    receptacle_obj.top_placeholder_position,
-                                    line_style,
-                                    curved=True,
-                                    color=color,
-                                )
+                            self.add_arrow(
+                                ax,
+                                object_obj.center_position,
+                                arrow_dest_position,
+                                line_style,
+                                curved=True,
+                                color=color,
+                            )
 
     def plot_object_to_room_lines(
         self, object_names, room_names, number, ax, color=None, modify_object_color=False,
     ):
-        """
-        Plots lines between objects and rooms based on their relations.
-
-        Parameters:
-            object_names (list): List of object names.
-            room_names (list): List of room names.
-            ax (matplotlib.axes.Axes): Axes to plot the lines on.
-        """
         source_objects = []
         target_rooms = []
         for object_name in object_names:
@@ -287,17 +195,6 @@ class Scene:
         height_offset=0,
         all_mentioned_rooms=None,
     ):
-        """
-        Plots rooms linearly with names underneath.
-
-        Parameters:
-            mentioned_rooms (list): List of mentioned room names.
-            ax (matplotlib.axes.Axes): Axes to plot the rooms on.
-
-        Returns:
-            matplotlib.axes.Axes: Modified axes.
-        """
-
         if target_width is None:
             # Calculate starting position of the first row to center it relative to the second row
             first_row_position = 0
@@ -382,9 +279,6 @@ class Scene:
             for room in self.rooms:
                 if room.room_id not in all_mentioned_rooms:
                     all_rooms.append(room)
-            # NOTE: This is needed to get back to original width after every call of this method
-            for room in self.rooms:
-                room.init_size()
 
             current_rooms_to_plot = []
             current_row_width = 0
@@ -396,22 +290,15 @@ class Scene:
                     current_row_width += room.width
                     current_rooms_to_plot.append(room)
                 else:
-                    rooms_have_objects = np.any(
-                        [
-                            room.objects is not None and room.objects != []
-                            for room in current_rooms_to_plot
-                        ]
-                    )
-                    for room in current_rooms_to_plot:
-                        if rooms_have_objects:
-                            room.use_full_height = True
-                            room.init_size()
-                        else:
-                            room.use_full_height = False
-                            room.init_size()
                     current_row_height -= max(
                         room.height for room in current_rooms_to_plot
                     )
+                    # Set max room height for all rooms
+                    max_room_height = max(room.room_height for room in current_rooms_to_plot)
+                    max_height = max(room.height for room in current_rooms_to_plot)
+                    for room in current_rooms_to_plot:
+                        room.height = max_height
+                        room.room_height = max_room_height
                     current_row_width = 0
                     room_target_widths = (
                         redistribute_target_width_to_rooms(
@@ -433,19 +320,6 @@ class Scene:
                     continue
                 i += 1
 
-            rooms_have_objects = np.any(
-                [
-                    room.objects is not None and room.objects != []
-                    for room in current_rooms_to_plot
-                ]
-            )
-            for room in current_rooms_to_plot:
-                if rooms_have_objects:
-                    room.use_full_height = True
-                    room.init_size()
-                else:
-                    room.use_full_height = False
-                    room.init_size()
             current_row_height -= max(
                 room.height for room in current_rooms_to_plot
             )
@@ -648,7 +522,7 @@ class Scene:
                 )
             if hasattr(self, "legend") or hasattr(self, "same_args_legend"):
                 width = self.legend.width if hasattr(self, "legend") else self.same_args_legend.width  
-                ax.set_xlim(0 - 300, self.width + 300 + width + 300)
+                ax.set_xlim(0, self.width + 300 + width + 300)
 
         # Set axis limits
         else:
@@ -662,7 +536,7 @@ class Scene:
             wrapped_text = wrap_text(
                 self.instruction, self.config.max_chars_per_line
             )
-            if is_next_tos:
+            if is_next_tos or same_args_data:
                 frac = 0.5 * (self.width + 600) /(self.width + 300 + self.config.is_next_to.width + 300 + 300)
             else:
                 frac = 0.5
@@ -786,7 +660,9 @@ class Scene:
                     )
                 )
                 # Plot horizontal line
-                ax.axhline(
+                ax.hlines(
+                    xmin=0, 
+                    xmax=self.width,
                     y=height_lower - 20,
                     color="white",
                     linewidth=4,

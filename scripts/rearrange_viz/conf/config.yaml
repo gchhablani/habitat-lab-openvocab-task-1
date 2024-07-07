@@ -4,8 +4,8 @@ defaults:
 object:
   text_margin: -115
   bottom_text_extra_margin: 50
-  width: 80
-  height: 80
+  width: 100
+  height: 100
   text_size: 11
   rounding_size: 10
   max_chars_per_line: 9
@@ -17,15 +17,15 @@ receptacle:
   horizontal_margin: 5
   target_height: 500 # 0.35 * full_height
   placeholder:
-    width: 80
-    height: 80
+    width: 100
+    height: 100
     rounding_size: 10
   placeholder_margin: 40
 
 room:
   placeholder:
-    width: 80
-    height: 80
+    width: 100
+    height: 100
     rounding_size: 10
   box_alpha: 1.0
   horizontal_margin: 10
@@ -34,10 +34,7 @@ room:
   bottom_pad: 170
   left_pad: 20
   right_pad: 20
-  full_height: 1800
-  half_height: 900
-  placeholder_height_if_full: 0.5 # of full height above bottom pad
-  placeholder_height_if_half: 0.85 # of half height above bottom pad
+  placeholder_height: 0.65 # of full height above bottom pad
   objects_height: 0.75 # of full height above bottom pad
   min_width: 300
   object_horizontal_margin_fraction: 0.05 # Fraction on each side to skip
@@ -60,8 +57,8 @@ scene:
     object:
       text_margin: -115
       bottom_text_extra_margin: 50
-      width: 80
-      height: 80
+      width: 100
+      height: 100
       text_size: 11
       rounding_size: 10
       max_chars_per_line: 9
@@ -73,6 +70,11 @@ scene:
         height: 80
         rounding_size: 10
       placeholder_margin: 0
+    room:
+      width: 300
+      height: 200
+      text_size: 12
+      text_margin: -150
   arrow:
     head_length: 25
     head_width: 50

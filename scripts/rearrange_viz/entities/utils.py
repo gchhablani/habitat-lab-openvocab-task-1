@@ -35,7 +35,9 @@ def add_tint_to_rgb(image, tint_color):
     )
 
 
-def wrap_text(text, max_chars_per_line):
+def wrap_text(text, max_chars_per_line, split_on_period=False):
+    if split_on_period:
+        text = text.split('.')[0]
     # Remove digits which are preceded by `_`.
     text = re.sub(r"_(\d+)", "", text)
     # Remove underscores and slashes
@@ -55,3 +57,62 @@ def wrap_text(text, max_chars_per_line):
     wrapped_text.append(current_line.strip())
     wrapped_text = "\n".join(wrapped_text).strip()
     return wrapped_text
+
+def sort_rooms(rooms, instruction):
+    # Sorts the rooms based on "relevance"
+    # Uses keyword matching with the instruction and room + receptacle + object names
+    if not instruction:
+        return rooms
+
+    # Split instruction string into words and exclude "room"
+    keywords = [word.lower().strip(".") for word in instruction.split()]
+
+    # Create a dictionary to hold the rooms and their relevance score
+    relevance_scores = {}
+
+    for room in rooms:
+        score = sum(
+            " ".join(room.room_id.split("_")[:-1]) in keyword
+            for keyword in keywords
+        )
+
+        # Consider receptacles in the score calculation
+        for receptacle in room.receptacles:
+            score += sum(
+                " ".join(receptacle.receptacle_id.split("_")[:-1])
+                in keyword
+                for keyword in keywords
+            )
+
+        # Consider objects in the score calculation
+        if room.objects:
+            for obj in room.objects:
+                score += sum(
+                    " ".join(obj.object_id.split("_")[:-1]) in keyword
+                    for keyword in keywords
+                )
+
+        relevance_scores[room] = score
+
+    # Sort the rooms based on relevance score
+    sorted_rooms = sorted(
+        relevance_scores.keys(),
+        key=lambda room: relevance_scores[room],
+        reverse=True,
+    )
+
+    return sorted_rooms
+
+def redistribute_target_width_to_rooms(rooms_to_plot, target_width):
+    # Calculate total width of all rooms
+    total_width = sum(room.width for room in rooms_to_plot)
+
+    # Calculate redistribution factor based on target width and total width
+    redistribution_factor = target_width / total_width
+
+    # Redistribute width to each room based on their width ratios
+    redistributed_widths = [
+        room.width * redistribution_factor for room in rooms_to_plot
+    ]
+
+    return redistributed_widths
