@@ -19,25 +19,27 @@ class IsNextToLegend:
         self.config = config
         self.is_next_tos = is_next_tos
         self.receptacle_icon_mapping = receptacle_icon_mapping
+        self.set_graph_and_bipartite_sets()
+        self.set_height()
 
     @property
     def width(self):
         return self.config.width
 
-    def plot(self, position=(0, 0), ax=None):
+    def set_graph_and_bipartite_sets(self):
         # Create a bipartite graph and separate the entities into two different sets
-        G = nx.Graph()
-        edge_styles = {}
+        self.G = nx.Graph()
+        self.edge_styles = {}
         for is_next_to in self.is_next_tos:
             for entity_a in is_next_to[0]:
                 node_label_a = f"{entity_a[0]}"
-                if not G.has_node(node_label_a):
-                    G.add_node(node_label_a, entity=entity_a)
+                if not self.G.has_node(node_label_a):
+                    self.G.add_node(node_label_a, entity=entity_a)
 
             for entity_b in is_next_to[1]:
                 node_label_b = f"{entity_b[0]}"
-                if not G.has_node(node_label_b):
-                    G.add_node(node_label_b, entity=entity_b)
+                if not self.G.has_node(node_label_b):
+                    self.G.add_node(node_label_b, entity=entity_b)
                 
                 # Determine the line style
                 line_style = 'dotted' if is_next_to[2] < len(is_next_to[0]) or is_next_to[2] < len(is_next_to[1]) else 'solid'
@@ -45,128 +47,58 @@ class IsNextToLegend:
                 # Add edges between all pairs of nodes in entity_a and entity_b
                 for entity_a in is_next_to[0]:
                     node_label_a = f"{entity_a[0]}"
-                    G.add_edge(node_label_a, node_label_b)
-                    edge_styles[(node_label_a, node_label_b)] = line_style
+                    self.G.add_edge(node_label_a, node_label_b)
+                    self.edge_styles[(node_label_a, node_label_b)] = line_style
 
         # Check if the graph is bipartite
-        assert nx.is_bipartite(G), "The graph is not bipartite"
+        assert nx.is_bipartite(self.G), "The graph is not bipartite"
+        self.left_set, self.right_set = get_bipartite_sets(self.G)
 
-        try:
-            left_set, right_set = nx.bipartite.sets(G)
-        except Exception as e:
-            # When the graph is disconnected
-            left_set, right_set = get_bipartite_sets(G)
-        # Get maximum height based on left and right sets
-        
-        # TODO: Think of better logic to calculate height here
-        mx_height = max((len(left_set) + 1) * 2 + len(left_set), (len(right_set) + 1) * 2 + len(right_set)) * self.config.object.height
-        if len(left_set) > len(right_set):
-            spacing = mx_height / (len(left_set))
-        else:
-            spacing = mx_height / (len(right_set))
+    def set_height(self):
+        self.height = max(
+            (len(self.left_set) + 1) * 2 + len(self.left_set),
+            (len(self.right_set) + 1) * 2 + len(self.right_set)
+        ) * self.config.object.height
 
-        # Plotting logic
-        if ax is None:
-            fig, ax = plt.subplots()
-            created_fig = True
-        else:
-            created_fig = False
-
-        # Plot the box
-        rect = ax.add_patch(
-            plt.Rectangle(
-                (
-                    position[0] + self.config.horizontal_margin,  # margin
-                    position[1],
-                ),
-                self.config.width,
-                mx_height + self.config.top_pad + self.config.bottom_pad,
-                edgecolor="white",
-                linewidth=0,
-                facecolor="#2D3541",
-            )
-        )
-        # Set the z-order of the rectangle
-        rect.set_zorder(-1)
-
-        left_entities = {}
-        # Plot the left nodes
-        left_midpoint = (
-            position[0] + self.config.horizontal_margin + self.config.width / 4
-        )
-        left_current_height = (
-            position[1] + mx_height - 2 * self.config.object.height + self.config.bottom_pad
-        )  # top padding
-        
-        for idx, node in enumerate(left_set):
-            entity_id, entity_type = G.nodes[node]['entity']
+    def plot_entity_column(
+        self, ax, entity_set, midpoint, current_height, spacing
+    ):
+        entities = {}
+        for idx, node in enumerate(entity_set):
+            entity_id, entity_type = self.G.nodes[node]['entity']
             if entity_type == "object":
-                left_entity = Object(self.config, entity_id)
-                left_origin = (
-                    left_midpoint - self.config.object.width / 2,
-                    left_current_height - self.config.object.height / 2,
+                entity = Object(self.config, entity_id)
+                origin = (
+                    midpoint - self.config.object.width / 2,
+                    current_height - self.config.object.height / 2,
                 )
             else:
                 icon_path = self.receptacle_icon_mapping.get(
                     entity_id, "receptacles/chair@2x.png"
                 )
-                left_entity = Receptacle(
+                entity = Receptacle(
                     self.config, entity_id, icon_path
                 )
-                left_origin = (
-                    left_midpoint - left_entity.width / 2,
-                    left_current_height - left_entity.height / 2,
+                origin = (
+                    midpoint - entity.width / 2,
+                    current_height - entity.height / 2,
                 )
-            left_entities[f"{entity_id}"] = left_entity
-            left_entity.plot(
+            entities[f"{entity_id}"] = entity
+            entity.plot(
                 ax,
-                left_origin,
+                origin,
             )
-            left_current_height -= spacing
-    
-        
-        right_entities = {}
-        # Plot the right nodes
-        right_midpoint = (
-            position[0] + self.config.horizontal_margin + 3 * self.config.width / 4
-        )
-        right_current_height = (
-            position[1] + mx_height - 2 * self.config.object.height + self.config.bottom_pad
-        )  # top padding
-        
-        for idx, node in enumerate(right_set):
-            entity_id, entity_type = G.nodes[node]['entity']
-            if entity_type == "object":
-                right_entity = Object(self.config, entity_id)
-                right_origin = (
-                    right_midpoint - self.config.object.width / 2,
-                    right_current_height - self.config.object.height / 2,
-                )
-            else:
-                icon_path = self.receptacle_icon_mapping.get(
-                    entity_id, "receptacles/chair@2x.png"
-                )
-                right_entity = Receptacle(
-                    self.config, entity_id, icon_path
-                )
-                right_origin = (
-                    right_midpoint - right_entity.width / 2,
-                    right_current_height - right_entity.height / 2,
-                )
-            right_entities[f"{entity_id}"] = right_entity
-            right_entity.plot(
-                ax,
-                right_origin,
-            )
-            right_current_height -= spacing
+            current_height -= spacing
+        return entities
 
+    def plot_lines(self, ax, left_entities, right_entities):
         # Plot lines from left entities to right entities
-        for edge in G.edges():
+        for edge in self.G.edges():
             node1, node2 = edge
-            if (node1, node2) in edge_styles:
-                line_style = edge_styles[(node1, node2)]
+            if (node1, node2) in self.edge_styles:
+                line_style = self.edge_styles[(node1, node2)]
             else:
-                line_style = edge_styles[(node2, node1)]
+                line_style = self.edge_styles[(node2, node1)]
             if node1 in left_entities:
                 left_entity = left_entities[node1]
             elif node1 in right_entities:
@@ -200,15 +132,70 @@ class IsNextToLegend:
             # Mark the end points of the lines with larger solid dots
             ax.scatter(left_center[0], left_center[1], color='white', s=self.config.endpoint_size, zorder=2)
             ax.scatter(right_center[0], right_center[1], color='white', s=self.config.endpoint_size, zorder=2)
-            ax.text(
-                position[0] + self.config.horizontal_margin + self.config.width / 2,
-                position[1] + mx_height + self.config.bottom_pad,
-                "next to",
-                horizontalalignment="center",
-                verticalalignment="top",
-                fontsize=self.config.text_size,
-                zorder=float('inf'),
+
+    def plot(self, position=(0, 0), ax=None):
+        # Plotting logic
+        if ax is None:
+            fig, ax = plt.subplots()
+            created_fig = True
+        else:
+            created_fig = False
+
+        # Plot the box
+        rect = ax.add_patch(
+            plt.Rectangle(
+                (
+                    position[0] + self.config.horizontal_margin,  # margin
+                    position[1],
+                ),
+                self.config.width,
+                self.height + self.config.top_pad + self.config.bottom_pad,
+                edgecolor="white",
+                linewidth=0,
+                facecolor="#2D3541",
             )
+        )
+        # Set the z-order of the rectangle
+        rect.set_zorder(-1)
+
+        left_spacing = self.height / (len(self.left_set))
+        right_spacing = self.height / (len(self.right_set))
+
+        # Plot the left nodes
+        left_midpoint = (
+            position[0] + self.config.horizontal_margin + self.config.width / 4
+        )
+        left_current_height = (
+            position[1] + self.height + self.config.bottom_pad - left_spacing/2
+        )
+        left_entities = self.plot_entity_column(
+            ax, self.left_set, left_midpoint, left_current_height, left_spacing
+        )
+
+        # Plot the right nodes
+        right_midpoint = (
+            position[0] + self.config.horizontal_margin + 3 * self.config.width / 4
+        )
+        right_current_height = (
+            position[1] + self.height + self.config.bottom_pad - right_spacing/2
+        )
+        right_entities = self.plot_entity_column(
+            ax, self.right_set, right_midpoint, right_current_height, right_spacing
+        )
+
+        self.plot_lines(ax, left_entities, right_entities)
+
+        # title
+        ax.text(
+            position[0] + self.config.horizontal_margin + self.config.width / 2,
+            position[1] + self.height + self.config.bottom_pad,
+            "next to",
+            horizontalalignment="center",
+            verticalalignment="top",
+            fontsize=self.config.text_size,
+            zorder=float('inf'),
+        )
+
         if created_fig:
             return fig, ax
         else:

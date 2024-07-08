@@ -148,8 +148,8 @@ class Receptacle:
         self.set_placeholder_positions(icon, origin)
         self.plot_placeholders(ax)
 
-        ax.axis("off")
         if created_fig:
+            ax.axis("off")
             return fig, ax
         else:
             return ax

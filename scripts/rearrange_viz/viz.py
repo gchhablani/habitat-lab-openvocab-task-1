@@ -9,7 +9,7 @@ import matplotlib.font_manager as font_manager
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from entities import Object, Receptacle, Room, Scene
+from entities import Object, Receptacle, Room, Scene, PrediViz
 from google_drive_utils import (
     add_image_to_sheet,
     create_drive_folder,
@@ -168,10 +168,14 @@ def plot_scene(
         rooms,
         episode_data["instruction"] if instruction is None else instruction,
     )
-    fig, ax, num_instruction_lines = scene.plot(
-        receptacle_icon_mapping,
+    prediviz = PrediViz(
+        config,
+        scene
+    )
+    fig, ax, num_instruction_lines = prediviz.plot(
         propositions,
         constraints,
+        receptacle_icon_mapping
     )
     width_inches = config.width_inches
     fig.set_size_inches(

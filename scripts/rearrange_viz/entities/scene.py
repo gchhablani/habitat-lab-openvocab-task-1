@@ -3,9 +3,7 @@ import numpy as np
 from matplotlib.patches import FancyArrow, PathPatch
 from matplotlib.path import Path
 
-from .legends.is_next_to_legend import IsNextToLegend
-from .legends.same_args_legend import SameArgsLegend
-from .utils import wrap_text, sort_rooms, redistribute_target_width_to_rooms
+from .utils import sort_rooms, redistribute_target_width_to_rooms
 from .constants import color_palette, BACKGROUND_COLOR
 
 
@@ -265,90 +263,6 @@ class Scene:
 
         return ax, height_lower, height_upper
 
-    def extract_info_before_plot(self, propositions):
-        # Extract room names mentioned in propositions
-        mentioned_objs = []
-        on_floor_objs = []
-        mentioned_receps = []
-        mentioned_rooms = []
-        is_next_tos = []
-        for prop in propositions:
-            if prop["function_name"] in ["is_on_top", "is_inside"]:
-                mentioned_objs += prop["args"]["object_names"]
-                if prop["function_name"] == "is_on_top":
-                    mentioned_receps += [
-                        ("is_on_top", recep_name)
-                        for recep_name in prop["args"]["receptacle_names"]
-                    ]
-                if prop["function_name"] == "is_inside":
-                    mentioned_receps += [
-                        ("is_inside", recep_name)
-                        for recep_name in prop["args"]["receptacle_names"]
-                    ]
-            elif prop["function_name"] == "is_in_room":
-                mentioned_objs += prop["args"]["object_names"]
-                mentioned_rooms += prop["args"]["room_names"]
-            elif prop["function_name"] == "is_on_floor":
-                on_floor_objs += prop["args"]["object_names"]
-            elif prop["function_name"] == "is_next_to":
-                is_next_tos += [
-                    [
-                        prop["args"]["entity_handles_a_names_and_types"],
-                        prop["args"]["entity_handles_b_names_and_types"],
-                        prop["args"]["number"],
-                    ]
-                ]
-            else:
-                raise NotImplementedError(
-                    f"Not implemented for function with name: {prop['function_name']}."
-                )
-
-        for room in self.rooms:
-            if room.room_id in mentioned_rooms:
-                room.plot_placeholder = True
-            else:
-                room.plot_placeholder = False
-
-        for room in self.rooms:
-            for receptacle in room.receptacles:
-                receptacle.plot_top_placeholder = False
-                receptacle.plot_center_placeholder = False
-            for obj in room.objects:
-                obj.is_on_floor = False
-
-        for room in self.rooms:
-            for obj in on_floor_objs:
-                found_object = room.find_object_by_id(obj)
-                if found_object:
-                    found_object.is_on_floor = True
-                    if room.room_id not in mentioned_rooms:
-                        mentioned_rooms += [room.room_id]
-
-            for obj in mentioned_objs:
-                found_object = room.find_object_by_id(obj)
-                if found_object:
-                    if room.room_id not in mentioned_rooms:
-                        mentioned_rooms += [room.room_id]
-            for prop_function, recep in mentioned_receps:
-                found_receptacle = room.find_receptacle_by_id(recep)
-                if found_receptacle:
-                    if room.room_id not in mentioned_rooms:
-                        mentioned_rooms += [room.room_id]
-                    if prop_function == "is_on_top":
-                        found_receptacle.plot_top_placeholder = True
-                    elif prop_function == "is_inside":
-                        found_receptacle.plot_center_placeholder = True
-                    else:
-                        raise NotImplementedError(
-                            f"Not implemented for prop fuction {prop_function}."
-                        )
-
-        for room in self.rooms:
-            if room.room_id in mentioned_rooms:
-                room.in_proposition = True
-            else:
-                room.in_proposition = False
-        return mentioned_rooms, is_next_tos
 
     def plot_proposition_lines(self, ax, propositions):
         color_index = 0
@@ -386,42 +300,15 @@ class Scene:
                         modify_object_color=True
                     )
 
-    def plot_instruction(self, ax, legend_column=False):
-        if self.instruction:
-            wrapped_text = wrap_text(
-                self.instruction, self.config.max_chars_per_line
-            )
-            if legend_column:
-                frac = 0.5 * (self.width + 600) /(self.width + 300 + self.config.is_next_to.width + 300 + 300)
-            else:
-                frac = 0.5
-
-            ax.text(
-                frac,
-                self.config.instruction_relative_height,
-                wrapped_text,
-                horizontalalignment="center",
-                verticalalignment="bottom",
-                transform=ax.transAxes,
-                fontsize=self.config.instruction_text_size,
-                zorder=float('inf'),
-            )
 
     def plot_one_time_step(
         self,
         ax,
         propositions,
-        receptacle_icon_mapping,
-        same_args_data,
-        show_instruction=True,
+        mentioned_rooms,
         height_offset=0,
         all_mentioned_rooms=None,
     ):
-        
-        (
-            mentioned_rooms,
-            is_next_tos
-        ) = self.extract_info_before_plot(propositions)
 
         ax, height_lower, height_upper = self.plot_room_rows(
             mentioned_rooms,
@@ -433,49 +320,7 @@ class Scene:
 
         self.plot_proposition_lines(ax, propositions)
 
-        # Plot the legend
-        if is_next_tos or same_args_data:
-            if is_next_tos:
-                self.legend = IsNextToLegend(
-                    self.config.is_next_to, is_next_tos, receptacle_icon_mapping
-                )
-                self.legend.plot(
-                    (
-                        self.width,
-                        (height_lower + height_upper) / 2
-                        - self.config.is_next_to.height / 2,
-                    ),
-                    ax,
-                )
-            if same_args_data:
-                self.same_args_legend = SameArgsLegend(
-                    self.config.is_next_to, same_args_data, receptacle_icon_mapping
-                )
-                self.same_args_legend.plot(
-                    (
-                        self.width,
-                        (height_lower + height_upper) / 2
-                        + self.config.is_next_to.height / 2,
-                    ),
-                    ax,
-                )
-            if hasattr(self, "legend") or hasattr(self, "same_args_legend"):
-                width = self.legend.width if hasattr(self, "legend") else self.same_args_legend.width  
-                ax.set_xlim(0, self.width + 300 + width + 300)
-
-        # Set axis limits
-        else:
-            ax.set_xlim(0, self.width)
-        ax.set_ylim(height_lower, height_upper)
-
-        # Add instruction on top
-        wrapped_text = ""
-        if show_instruction:
-            self.plot_instruction(
-                ax, legend_column=is_next_tos or same_args_data
-            )
-
-        return ax, height_lower, height_upper, wrapped_text
+        return ax, height_lower, height_upper
 
     def get_all_mentioned_rooms(self, propositions):
         # NOTE: All the next bits are only used to get a list of all the mentioned rooms to keep them in front!
@@ -523,73 +368,137 @@ class Scene:
         all_mentioned_rooms = sorted(mentioned_rooms)
         return all_mentioned_rooms
 
+    def extract_info_before_plot(self, propositions):
+        # Extract room names mentioned in propositions
+        mentioned_objs = []
+        on_floor_objs = []
+        mentioned_receps = []
+        mentioned_rooms = []
+        for prop in propositions:
+            if prop["function_name"] in ["is_on_top", "is_inside"]:
+                mentioned_objs += prop["args"]["object_names"]
+                if prop["function_name"] == "is_on_top":
+                    mentioned_receps += [
+                        ("is_on_top", recep_name)
+                        for recep_name in prop["args"]["receptacle_names"]
+                    ]
+                if prop["function_name"] == "is_inside":
+                    mentioned_receps += [
+                        ("is_inside", recep_name)
+                        for recep_name in prop["args"]["receptacle_names"]
+                    ]
+            elif prop["function_name"] == "is_in_room":
+                mentioned_objs += prop["args"]["object_names"]
+                mentioned_rooms += prop["args"]["room_names"]
+            elif prop["function_name"] == "is_on_floor":
+                on_floor_objs += prop["args"]["object_names"]
+
+        for room in self.rooms:
+            if room.room_id in mentioned_rooms:
+                room.plot_placeholder = True
+            else:
+                room.plot_placeholder = False
+
+        for room in self.rooms:
+            for receptacle in room.receptacles:
+                receptacle.plot_top_placeholder = False
+                receptacle.plot_center_placeholder = False
+            for obj in room.objects:
+                obj.is_on_floor = False
+
+        for room in self.rooms:
+            for obj in on_floor_objs:
+                found_object = room.find_object_by_id(obj)
+                if found_object:
+                    found_object.is_on_floor = True
+                    if room.room_id not in mentioned_rooms:
+                        mentioned_rooms += [room.room_id]
+
+            for obj in mentioned_objs:
+                found_object = room.find_object_by_id(obj)
+                if found_object:
+                    if room.room_id not in mentioned_rooms:
+                        mentioned_rooms += [room.room_id]
+            for prop_function, recep in mentioned_receps:
+                found_receptacle = room.find_receptacle_by_id(recep)
+                if found_receptacle:
+                    if room.room_id not in mentioned_rooms:
+                        mentioned_rooms += [room.room_id]
+                    if prop_function == "is_on_top":
+                        found_receptacle.plot_top_placeholder = True
+                    elif prop_function == "is_inside":
+                        found_receptacle.plot_center_placeholder = True
+                    else:
+                        raise NotImplementedError(
+                            f"Not implemented for prop fuction {prop_function}."
+                        )
+
+        for room in self.rooms:
+            if room.room_id in mentioned_rooms:
+                room.in_proposition = True
+            else:
+                room.in_proposition = False
+        return mentioned_rooms
+        
     def plot(
         self,
-        receptacle_icon_mapping,
         propositions,
-        constraints,
+        toposort,
+        ax=None
     ):
-        fig, ax = plt.subplots()
-        fig.patch.set_facecolor(BACKGROUND_COLOR)
+        if ax is None:
+            fig, ax = plt.subplots()
+            fig.patch.set_facecolor(BACKGROUND_COLOR)
+        else:
+            fig = plt.gcf()
 
-        toposort = []
-        all_same_args = []
-        for constraint in constraints:
-            if constraint["type"] == "TemporalConstraint":
-                toposort = constraint["toposort"]
-            elif constraint["type"] == "SameArgConstraint":
-                all_same_args.append(constraint["same_args_data"])
-
+        prop_to_height_range = {}
         if toposort:
             all_mentioned_rooms = self.get_all_mentioned_rooms(propositions)
             max_upper = 0
             min_lower = 0
-            num_instruction_lines = 0
             for level_idx, current_level in enumerate(toposort):
-                show_instruction = level_idx == 0
                 current_propositions = [
                     propositions[idx] for idx in current_level
                 ]
-                ax, height_lower, height_upper, wrapped_text = (
+                mentioned_rooms = self.extract_info_before_plot(current_propositions)
+                ax, height_lower, height_upper = (
                     self.plot_one_time_step(
                         ax,
                         current_propositions,
-                        receptacle_icon_mapping=receptacle_icon_mapping,
-                        same_args_data=all_same_args,
-                        show_instruction=show_instruction,
+                        mentioned_rooms,
                         height_offset=min_lower,
                         all_mentioned_rooms=all_mentioned_rooms,
                     )
                 )
-                # Plot horizontal line
-                ax.hlines(
-                    xmin=0, 
-                    xmax=self.width,
-                    y=height_lower - 20,
-                    color="white",
-                    linewidth=4,
-                    linestyle="-",
-                )
-                num_instruction_lines = max(
-                    num_instruction_lines, wrapped_text.count("\n") + 1
-                )
+                prop_to_height_range[level_idx] = (height_lower, min_lower, max_upper - min_lower)
+                if level_idx != len(toposort) - 1:
+                    # Plot horizontal line
+                    ax.hlines(
+                        xmin=0, 
+                        xmax=self.width,
+                        y=height_lower - 20,
+                        color="white",
+                        linewidth=4,
+                        linestyle="-",
+                    )
                 max_upper = max(height_upper, max_upper)
                 min_lower = min(height_lower - 40, min_lower)
+                # Reset room widths 
+                # TODO: Use a better logic to avoid recomputation of widths
+                for room in self.rooms:
+                    room.init_widths()
             self.height = max_upper - min_lower
-            return fig, ax, num_instruction_lines
+            return fig, ax, min_lower, max_upper, prop_to_height_range
         else:
-            num_instruction_lines = 0
-            ax, height_lower, height_upper, wrapped_text = (
+            mentioned_rooms = self.extract_info_before_plot(propositions)
+            ax, height_lower, height_upper = (
                 self.plot_one_time_step(
                     ax,
                     propositions,
-                    receptacle_icon_mapping=receptacle_icon_mapping,
-                    same_args_data=all_same_args,
-                    show_instruction=True,
+                    mentioned_rooms,
                 )
             )
+            prop_to_height_range[0] = (height_lower, height_upper, 0)
             self.height = height_upper - height_lower
-            num_instruction_lines = max(
-                num_instruction_lines, wrapped_text.count("\n") + 1
-            )
-            return fig, ax, num_instruction_lines
+            return fig, ax, height_lower, height_upper, prop_to_height_range
