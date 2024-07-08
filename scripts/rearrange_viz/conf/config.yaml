@@ -46,6 +46,7 @@ room:
 
 scene:
   is_next_to:
+    legend_margin: 50
     text_size: 12
     linewidth: 2
     endpoint_size: 50

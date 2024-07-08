@@ -1,21 +1,22 @@
 from matplotlib.patches import FancyBboxPatch
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 from ..object import Object
 from ..constants import LEGEND_BACKGROUND_COLOR
 from ..receptacle import Receptacle
 from ..tiny_room import TinyRoom
 
-class SameArgsLegend:
-    def __init__(self, config, same_args, receptacle_icon_mapping):
-        self.title = "same as"
+class DiffArgsLegend:
+    def __init__(self, config, diff_args, receptacle_icon_mapping):
+        self.title = "diff as"
         self.config = config
-        # same_args is a list of lists
+        # diff_args is a list of lists
         # each inner list is a list of tuples
         # the first item in each tuple is supposed to be the "same" element
         # the second item in each tuple is the thing to be on the other side
         # each item has its type described in the tuple
-        self.same_args = same_args
+        self.diff_args = diff_args
         self.receptacle_icon_mapping = receptacle_icon_mapping
         self.set_graph_and_bipartite_sets()
         self.set_height()
@@ -26,27 +27,25 @@ class SameArgsLegend:
 
     def set_graph_and_bipartite_sets(self):
         self.G = nx.Graph()
-        for same_args_data in self.same_args:
+        for diff_args_data in self.diff_args:
             left_elements = set()
             right_elements = set()
-            for tup in same_args_data:
+            for tup in diff_args_data:
                 left_elements = left_elements.union(set(tup[0]))
                 right_elements = right_elements.union(set(tup[1]))
+
             left_elements = list(left_elements)
             right_elements = list(right_elements)
-
-            # TODO: Think if we need a better logic here.
-            # Currently just picking one of the elements here.
-            # left element is the common element
-            left_element = left_elements[0]
-            if not self.G.has_node(left_element[0]):
-                self.G.add_node(left_element[0], entity=left_element, bipartite=0)
-            for item in right_elements:
-                node_label = item[0]
-                if not self.G.has_node(node_label):
-                    self.G.add_node(node_label, entity=item, bipartite=1)
-                self.G.add_edge(left_element[0], node_label)
-
+            for tup_idx, tup in enumerate(diff_args_data):   
+                left_element = left_elements[tup_idx]
+                right_element = right_elements[tup_idx]
+                while left_element == right_element:
+                    right_element = right_elements[np.random.choice(len(right_elements))]
+                if not self.G.has_node(left_element):
+                    self.G.add_node(left_element[0], entity=left_element, bipartite=0)
+                if not self.G.has_node(right_element):
+                    self.G.add_node(right_element[0], entity=right_element, bipartite=1)
+                self.G.add_edge(left_element[0], right_element[0])
         left_set = set()
         right_set = set()
         # Get the two sets of nodes
@@ -134,8 +133,8 @@ class SameArgsLegend:
                 else second_entity.center_position
             )
             ax.plot(
-                [first_center[0], first_center[0]],
-                [second_center[1], second_center[1]],
+                [first_center[0], second_center[0]],
+                [first_center[1], second_center[1]],
                 linestyle=line_style,
                 linewidth=self.config.linewidth,
                 color="white",
@@ -169,7 +168,6 @@ class SameArgsLegend:
         )
         # Set the z-order of the rectangle
         rect.set_zorder(-1)
-
         left_spacing = self.height / (len(self.left_set))
         right_spacing = self.height / (len(self.right_set))
 

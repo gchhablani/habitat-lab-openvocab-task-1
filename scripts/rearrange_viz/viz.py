@@ -298,6 +298,8 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
 
     # Handle Constraints
     constraints = run_data["evaluation_constraints"]
+    all_constraints = set(constraint["type"] for constraint in constraints)
+    assert "SameArgConstraint" in all_constraints, "samearg not in episode data"
     for idx, constraint in enumerate(constraints):
         if constraint["type"] == "TemporalConstraint":
             digraph = nx.DiGraph(constraint["args"]["dag_edges"])
@@ -337,7 +339,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                     )
                 elif arg_name == "entity_handles_a" or arg_name == "entity_handles_b":
                     entity_index = arg_name.split('_')[-1]
-                    opposite_entity_index = "b" if entity_index == "a" else "b"
+                    opposite_entity_index = "b" if entity_index == "a" else "a"
                     same_args.append(
                         (
                             propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"],
@@ -357,6 +359,50 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                         f"Not implemented SameArg for arg name: {arg_name}"
                     )
             constraint["same_args_data"] = same_args
+        elif constraint["type"] == "DifferentArgConstraint":
+            diff_args = []
+            for proposition_index, arg_name in zip(constraint["args"]["proposition_indices"], constraint["args"]["arg_names"]):
+                if arg_name == "object_handles" or arg_name == "receptacle_handles":
+                    if arg_name == "object_handles":
+                        left_name = "object_names"
+                        if "receptacle_names" in propositions[proposition_index]["args"]:
+                            right_name = "receptacle_names"
+                        elif "room_names" in propositions[proposition_index]["args"]:
+                            right_name = "room_names"
+                        else:
+                            raise NotImplementedError(f"Not implemented for `arg_name`: {arg_name} and no receptacle or room names.")
+                    elif arg_name == "receptacle_handles":
+                        left_name = "receptacle_names"
+                        right_name = "object_names"
+
+                    diff_args.append(
+                        (
+                            [(item, left_name.split("_")[0]) for item in propositions[proposition_index]["args"][left_name]],
+                            [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
+                        )
+                    )
+                elif arg_name == "entity_handles_a" or arg_name == "entity_handles_b":
+                    entity_index = arg_name.split('_')[-1]
+                    opposite_entity_index = "b" if entity_index == "a" else "b"
+                    diff_args.append(
+                        (
+                            propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"],
+                            propositions[proposition_index]["args"][f"entity_handles_{opposite_entity_index}_names_and_types"],
+                        )
+                    )
+                elif arg_name == "room_ids":
+                    right_name = "object_names"
+                    diff_args.append(
+                        (
+                            [(item, arg_name.split("_")[0]) for item in propositions[proposition_index]["args"][arg_name]],
+                            [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
+                        )
+                    )
+                else:
+                    raise NotImplementedError(
+                        f"Not implemented SameArg for arg name: {arg_name}"
+                    )
+            constraint["diff_args_data"] = diff_args
         else:
             raise NotImplementedError(
                 f"Constraint type {constraint['type']} is not handled currently."

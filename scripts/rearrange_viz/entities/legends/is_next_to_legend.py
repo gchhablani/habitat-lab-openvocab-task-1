@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from ..object import Object
 from ..receptacle import Receptacle
+from ..constants import LEGEND_BACKGROUND_COLOR
 
 # Function to get bipartite sets from a graph with disconnected components
 def get_bipartite_sets(G):
@@ -16,6 +17,7 @@ def get_bipartite_sets(G):
 
 class IsNextToLegend:
     def __init__(self, config, is_next_tos, receptacle_icon_mapping):
+        self.title = "next to"
         self.config = config
         self.is_next_tos = is_next_tos
         self.receptacle_icon_mapping = receptacle_icon_mapping
@@ -152,7 +154,7 @@ class IsNextToLegend:
                 self.height + self.config.top_pad + self.config.bottom_pad,
                 edgecolor="white",
                 linewidth=0,
-                facecolor="#2D3541",
+                facecolor=LEGEND_BACKGROUND_COLOR,
             )
         )
         # Set the z-order of the rectangle
@@ -189,7 +191,7 @@ class IsNextToLegend:
         ax.text(
             position[0] + self.config.horizontal_margin + self.config.width / 2,
             position[1] + self.height + self.config.bottom_pad,
-            "next to",
+            self.title,
             horizontalalignment="center",
             verticalalignment="top",
             fontsize=self.config.text_size,

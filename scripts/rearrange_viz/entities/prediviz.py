@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from .constants import BACKGROUND_COLOR
 from .legends.is_next_to_legend import IsNextToLegend
 from .legends.same_args_legend import SameArgsLegend
+from .legends.diff_args_legend import DiffArgsLegend
 from .utils import wrap_text
 
 class PrediViz:
@@ -10,6 +11,7 @@ class PrediViz:
         self.scene = scene
 
     def plot_instruction(self, ax, legend_column=False):
+        wrapped_text = ""
         if self.scene.instruction:
             wrapped_text = wrap_text(
                 self.scene.instruction, self.scene.config.max_chars_per_line
@@ -52,7 +54,7 @@ class PrediViz:
                 is_next_tos.append(current_is_next_tos)
         else:
             current_is_next_tos = []
-            for prop in current_propositions:
+            for prop in propositions:
                 if prop["function_name"] == "is_next_to":
                     current_is_next_tos += [
                         [
@@ -75,11 +77,15 @@ class PrediViz:
 
         toposort = []
         same_args_data = []
+        diff_args_data = []
+        legends = False
         for constraint in constraints:
             if constraint["type"] == "TemporalConstraint":
                 toposort = constraint["toposort"]
             elif constraint["type"] == "SameArgConstraint":
                 same_args_data.append(constraint["same_args_data"])
+            elif constraint["type"] == "DifferentArgConstraint":
+                diff_args_data.append(constraint["diff_args_data"])
 
         fig, ax, height_lower, height_upper, prop_to_height_range = self.scene.plot(
             propositions,
@@ -92,9 +98,12 @@ class PrediViz:
         )
         column = False
         # Plot the legend
-        if all_is_next_tos or same_args_data:
+        self.legends = []
+        self.legend_bounds = []
+        if (
+            all_is_next_tos or same_args_data or diff_args_data
+        ):
             if all_is_next_tos:
-                self.legends = []
                 for level_idx, is_next_tos in enumerate(all_is_next_tos):
                     if is_next_tos:
                         self.legends.append(
@@ -102,34 +111,57 @@ class PrediViz:
                                 self.scene.config.is_next_to, is_next_tos, receptacle_icon_mapping
                             )
                         )
-                        print(level_idx)
                         current_height_lower, current_height_upper, offset = prop_to_height_range[level_idx]
-                        self.legends[-1].plot(
-                            (
-                                self.scene.width,
-                                - (current_height_upper - current_height_lower) / 2
-                                - offset
-                                - self.legends[-1].height / 2
-                                - self.scene.config.is_next_to.bottom_pad,
-                            ),
-                            ax,
-                        )
+                        self.legend_bounds.append((
+                            current_height_lower, current_height_upper, offset
+                        ))
                         column = True
             if same_args_data:
-                self.same_args_legend = SameArgsLegend(
-                    self.scene.config.is_next_to, same_args_data, receptacle_icon_mapping
+                self.legends.append(
+                    SameArgsLegend(
+                        self.scene.config.is_next_to, same_args_data, receptacle_icon_mapping
+                    )
                 )
-                self.same_args_legend.plot(
-                    (
-                        self.scene.width,
-                        (height_lower + height_upper) / 2
-                        + self.scene.config.is_next_to.height / 2,
-                    ),
-                    ax,
-                )
+                self.legend_bounds.append((
+                    height_lower, height_upper, 0
+                ))
                 column = True
-            if hasattr(self, "legends") or hasattr(self, "same_args_legend"):
-                width = self.legends[-1].width if hasattr(self, "legends") else self.same_args_legend.width  
+            if diff_args_data:
+                self.legends.append(
+                    DiffArgsLegend(
+                        self.scene.config.is_next_to, diff_args_data, receptacle_icon_mapping
+                    )
+                )
+                self.legend_bounds.append((
+                    height_lower, height_upper, 0
+                ))
+                column = True
+
+            range_to_num = {}
+            range_to_current_height = {}
+            range_to_consumed_space = {}
+            for legend, bound in zip(self.legends, self.legend_bounds):
+                if bound not in range_to_num:
+                    range_to_num[bound] = 0
+                    range_to_consumed_space[bound] = 0
+                range_to_num[bound] += 1
+                range_to_current_height[bound] = 0
+                range_to_consumed_space[bound] += legend.height  + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+            
+            for legend, bound in zip(self.legends, self.legend_bounds):
+                (current_height_lower, current_height_upper, offset) = bound
+
+                available_space = (current_height_upper - current_height_lower)
+                consumed_space = range_to_consumed_space[bound]
+                num_spaces = range_to_num[bound] + 1
+
+                spacing = (available_space - consumed_space) / num_spaces
+                legend_space = legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+                legend_origin = - offset - range_to_current_height[bound] - spacing - legend_space
+                legend.plot((self.scene.width, legend_origin), ax)
+                range_to_current_height[bound] += legend_space + spacing
+            if hasattr(self, "legends"):
+                width = self.legends[-1].width
                 ax.set_xlim(0, self.scene.width + 300 + width + 300)
         else:
             ax.set_xlim(0, self.scene.width)
