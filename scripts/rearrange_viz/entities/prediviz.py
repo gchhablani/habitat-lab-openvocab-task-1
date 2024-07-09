@@ -180,6 +180,8 @@ class PrediViz:
 
             for col in range(num_columns):
                 current_height = column_heights[bound][col]
+                num_spaces = len(column_legend_lists[bound][col]) + 1
+                column_spacing = max(0, (available_space - current_height) / num_spaces)
                 if current_height > available_space:
                     # Center align legends vertically
                     total_legend_height = column_heights[bound][col]
@@ -190,13 +192,13 @@ class PrediViz:
                 current_height = vertical_offset
                 for legend in column_legend_lists[bound][col]:
                     legend_space = legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
-                    legend_origin = -offset - current_height - legend_space
+                    legend_origin = - offset - current_height - legend_space - column_spacing
                     max_column_upper = max(max_column_upper, legend_origin + legend.height + legend.top_pad + legend.bottom_pad)
                     min_column_lower = min(min_column_lower, legend_origin)
                     legend_left = self.scene.width + col * (column_width + legend.horizontal_margin)
                     legend.plot((legend_left, legend_origin), ax)
                     mx_width = max(mx_width, legend_left + legend.width + legend.horizontal_margin)
-                    current_height += legend_space
+                    current_height += legend_space + column_spacing
 
         if hasattr(self, "legends"):
             ax.set_xlim(0, mx_width)
