@@ -28,20 +28,36 @@ class IsNextToLegend:
     def width(self):
         return self.config.width
 
+    @property
+    def horizontal_margin(self):
+        return self.config.horizontal_margin
+
+    @property
+    def top_pad(self):
+        return self.config.top_pad
+
+    @property
+    def bottom_pad(self):
+        return self.config.bottom_pad
+    
     def set_graph_and_bipartite_sets(self):
         # Create a bipartite graph and separate the entities into two different sets
-        self.G = nx.Graph()
-        self.edge_styles = {}
+        self.graphs = []
+        self.left_sets = []
+        self.right_sets = []
+        self.edge_styles = []
         for is_next_to in self.is_next_tos:
+            G = nx.Graph()
+            edge_style = {}
             for entity_a in is_next_to[0]:
                 node_label_a = f"{entity_a[0]}"
-                if not self.G.has_node(node_label_a):
-                    self.G.add_node(node_label_a, entity=entity_a)
+                if not G.has_node(node_label_a):
+                    G.add_node(node_label_a, entity=entity_a)
 
             for entity_b in is_next_to[1]:
                 node_label_b = f"{entity_b[0]}"
-                if not self.G.has_node(node_label_b):
-                    self.G.add_node(node_label_b, entity=entity_b)
+                if not G.has_node(node_label_b):
+                    G.add_node(node_label_b, entity=entity_b)
                 
                 # Determine the line style
                 line_style = 'dotted' if is_next_to[2] < len(is_next_to[0]) or is_next_to[2] < len(is_next_to[1]) else 'solid'
@@ -49,25 +65,31 @@ class IsNextToLegend:
                 # Add edges between all pairs of nodes in entity_a and entity_b
                 for entity_a in is_next_to[0]:
                     node_label_a = f"{entity_a[0]}"
-                    self.G.add_edge(node_label_a, node_label_b)
-                    self.edge_styles[(node_label_a, node_label_b)] = line_style
+                    G.add_edge(node_label_a, node_label_b)
+                    edge_style[(node_label_a, node_label_b)] = line_style
 
-        # Check if the graph is bipartite
-        assert nx.is_bipartite(self.G), "The graph is not bipartite"
-        self.left_set, self.right_set = get_bipartite_sets(self.G)
+            # Check if the graph is bipartite
+            assert nx.is_bipartite(G), "The graph is not bipartite"
+            left_set, right_set = get_bipartite_sets(G)
+            self.graphs.append(G)
+            self.edge_styles.append(edge_style)
+            self.left_sets.append(left_set)
+            self.right_sets.append(right_set)
 
     def set_height(self):
+        self.left_set_length = sum(len(left_set) for left_set in self.left_sets)
+        self.right_set_length = sum(len(right_set) for right_set in self.right_sets)
         self.height = max(
-            (len(self.left_set) + 1) * 2 + len(self.left_set),
-            (len(self.right_set) + 1) * 2 + len(self.right_set)
+            (self.left_set_length + 1) * 2 + self.left_set_length,
+            (self.right_set_length + 1) * 2 + self.right_set_length
         ) * self.config.object.height
 
     def plot_entity_column(
-        self, ax, entity_set, midpoint, current_height, spacing
+        self, ax, G, entity_set, midpoint, current_height, spacing
     ):
         entities = {}
         for idx, node in enumerate(entity_set):
-            entity_id, entity_type = self.G.nodes[node]['entity']
+            entity_id, entity_type = G.nodes[node]['entity']
             if entity_type == "object":
                 entity = Object(self.config, entity_id)
                 origin = (
@@ -91,16 +113,16 @@ class IsNextToLegend:
                 origin,
             )
             current_height -= spacing
-        return entities
+        return entities, current_height
 
-    def plot_lines(self, ax, left_entities, right_entities):
+    def plot_lines(self, G, edge_style, ax, left_entities, right_entities):
         # Plot lines from left entities to right entities
-        for edge in self.G.edges():
+        for edge in G.edges():
             node1, node2 = edge
-            if (node1, node2) in self.edge_styles:
-                line_style = self.edge_styles[(node1, node2)]
+            if (node1, node2) in edge_style:
+                line_style = edge_style[(node1, node2)]
             else:
-                line_style = self.edge_styles[(node2, node1)]
+                line_style = edge_style[(node2, node1)]
             if node1 in left_entities:
                 left_entity = left_entities[node1]
             elif node1 in right_entities:
@@ -160,8 +182,8 @@ class IsNextToLegend:
         # Set the z-order of the rectangle
         rect.set_zorder(-1)
 
-        left_spacing = self.height / (len(self.left_set))
-        right_spacing = self.height / (len(self.right_set))
+        left_spacing = self.height / self.left_set_length
+        right_spacing = self.height / self.right_set_length
 
         # Plot the left nodes
         left_midpoint = (
@@ -170,9 +192,12 @@ class IsNextToLegend:
         left_current_height = (
             position[1] + self.height + self.config.bottom_pad - left_spacing/2
         )
-        left_entities = self.plot_entity_column(
-            ax, self.left_set, left_midpoint, left_current_height, left_spacing
-        )
+        left_entities = []
+        for G, left_set in zip(self.graphs, self.left_sets):
+            new_left_entities, left_current_height = self.plot_entity_column(
+                ax, G, left_set, left_midpoint, left_current_height, left_spacing
+            )
+            left_entities.append(new_left_entities)
 
         # Plot the right nodes
         right_midpoint = (
@@ -181,11 +206,17 @@ class IsNextToLegend:
         right_current_height = (
             position[1] + self.height + self.config.bottom_pad - right_spacing/2
         )
-        right_entities = self.plot_entity_column(
-            ax, self.right_set, right_midpoint, right_current_height, right_spacing
-        )
+        right_entities = []
+        for G, right_set in zip(self.graphs, self.right_sets):
+            new_right_entities, right_current_height = self.plot_entity_column(
+                ax, G, right_set, right_midpoint, right_current_height, right_spacing
+            )
+            right_entities.append(new_right_entities)
 
-        self.plot_lines(ax, left_entities, right_entities)
+        for G, edge_style, current_left_entities, current_right_entities in zip(
+            self.graphs, self.edge_styles, left_entities, right_entities
+        ):  
+            self.plot_lines(G, edge_style, ax, current_left_entities, current_right_entities)
 
         # title
         ax.text(

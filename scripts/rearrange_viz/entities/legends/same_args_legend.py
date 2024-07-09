@@ -24,9 +24,24 @@ class SameArgsLegend:
     def width(self):
         return self.config.width
 
+    @property
+    def horizontal_margin(self):
+        return self.config.horizontal_margin
+
+    @property
+    def top_pad(self):
+        return self.config.top_pad
+
+    @property
+    def bottom_pad(self):
+        return self.config.bottom_pad
+
     def set_graph_and_bipartite_sets(self):
-        self.G = nx.Graph()
+        self.graphs = []
+        self.left_sets = []
+        self.right_sets = []
         for same_args_data in self.same_args:
+            G = nx.Graph()
             left_elements = set()
             right_elements = set()
             for tup in same_args_data:
@@ -39,37 +54,41 @@ class SameArgsLegend:
             # Currently just picking one of the elements here.
             # left element is the common element
             left_element = left_elements[0]
-            if not self.G.has_node(left_element[0]):
-                self.G.add_node(left_element[0], entity=left_element, bipartite=0)
+            if not G.has_node(left_element[0]):
+                G.add_node(left_element[0], entity=left_element, bipartite=0)
             for item in right_elements:
                 node_label = item[0]
-                if not self.G.has_node(node_label):
-                    self.G.add_node(node_label, entity=item, bipartite=1)
-                self.G.add_edge(left_element[0], node_label)
+                if not G.has_node(node_label):
+                    G.add_node(node_label, entity=item, bipartite=1)
+                G.add_edge(left_element[0], node_label)
 
-        left_set = set()
-        right_set = set()
-        # Get the two sets of nodes
-        for idx, (label, data) in enumerate(self.G.nodes(data=True)):
-            if data["bipartite"] == 1:
-                left_set = left_set.union({label})
-            else:
-                right_set = right_set.union({label})
-        self.left_set = left_set
-        self.right_set = right_set
+            left_set = set()
+            right_set = set()
+            # Get the two sets of nodes
+            for idx, (label, data) in enumerate(G.nodes(data=True)):
+                if data["bipartite"] == 1:
+                    left_set = left_set.union({label})
+                else:
+                    right_set = right_set.union({label})
+            self.graphs.append(G)
+            self.left_sets.append(left_set)
+            self.right_sets.append(right_set)
 
     def set_height(self):
+        # TODO: We can better calculate height by checking recep vs obj
+        self.left_set_length = sum(len(left_set) for left_set in self.left_sets)
+        self.right_set_length = sum(len(right_set) for right_set in self.right_sets)
         self.height = max(
-            (len(self.left_set) + 1) * 2 + len(self.left_set),
-            (len(self.right_set) + 1) * 2 + len(self.right_set)
+            (self.left_set_length + 1) * 2 + self.left_set_length,
+            (self.right_set_length + 1) * 2 + self.right_set_length
         ) * self.config.object.height
     
     def plot_entity_column(
-        self, ax, entity_set, midpoint, current_height, spacing
+        self, ax, G, entity_set, midpoint, current_height, spacing
     ):
         entities = {}
         for idx, node in enumerate(entity_set):
-            entity_id, entity_type = self.G.nodes[node]['entity']
+            entity_id, entity_type = G.nodes[node]['entity']
             if entity_type == "object":
                 entity = Object(self.config, entity_id)
                 origin = (
@@ -101,10 +120,10 @@ class SameArgsLegend:
                 origin,
             )
             current_height -= spacing
-        return entities
+        return entities, current_height
 
-    def plot_lines(self, ax, left_entities, right_entities):
-        for edge in self.G.edges():
+    def plot_lines(self, G, ax, left_entities, right_entities):
+        for edge in G.edges():
             node1, node2 = edge
             line_style='solid'
             if node1 in left_entities:
@@ -134,8 +153,8 @@ class SameArgsLegend:
                 else second_entity.center_position
             )
             ax.plot(
-                [first_center[0], first_center[0]],
-                [second_center[1], second_center[1]],
+                [first_center[0], second_center[0]],
+                [first_center[1], second_center[1]],
                 linestyle=line_style,
                 linewidth=self.config.linewidth,
                 color="white",
@@ -170,8 +189,8 @@ class SameArgsLegend:
         # Set the z-order of the rectangle
         rect.set_zorder(-1)
 
-        left_spacing = self.height / (len(self.left_set))
-        right_spacing = self.height / (len(self.right_set))
+        left_spacing = self.height / self.left_set_length
+        right_spacing = self.height / self.right_set_length
 
         # Plot the left nodes
         left_midpoint = (
@@ -180,9 +199,12 @@ class SameArgsLegend:
         left_current_height = (
             position[1] + self.height + self.config.bottom_pad  - left_spacing/2
         )  # top padding
-        left_entities = self.plot_entity_column(
-            ax, self.left_set, left_midpoint, left_current_height, left_spacing
-        )
+        left_entities = []
+        for G, left_set in zip(self.graphs, self.left_sets):
+            new_left_entities, left_current_height = self.plot_entity_column(
+                ax, G, left_set, left_midpoint, left_current_height, left_spacing
+            )
+            left_entities.append(new_left_entities)
 
         # Plot the right nodes
         right_midpoint = (
@@ -191,11 +213,17 @@ class SameArgsLegend:
         right_current_height = (
             position[1] + self.height + self.config.bottom_pad - right_spacing/2
         )  # top padding
-        right_entities = self.plot_entity_column(
-            ax, self.right_set, right_midpoint, right_current_height, right_spacing
-        )
-        
-        self.plot_lines(ax, left_entities, right_entities)
+        right_entities = []
+        for G, right_set in zip(self.graphs, self.right_sets):
+            new_right_entities, right_current_height = self.plot_entity_column(
+                ax, G, right_set, right_midpoint, right_current_height, right_spacing
+            )
+            right_entities.append(new_right_entities)
+
+        for G, current_left_entities, current_right_entities in zip(
+            self.graphs, left_entities, right_entities
+        ):  
+            self.plot_lines(G, ax, current_left_entities, current_right_entities)
 
         # title 
         ax.text(

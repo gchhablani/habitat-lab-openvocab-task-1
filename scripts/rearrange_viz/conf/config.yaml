@@ -84,6 +84,6 @@ scene:
   target_width: 6000
   instruction_text_size: 20
   instruction_relative_height: 1.05
-  max_chars_per_line: 100
+  max_chars_per_line: 80
 
-width_inches: 20
+width_inches: 25

@@ -172,7 +172,7 @@ def plot_scene(
         config,
         scene
     )
-    fig, ax, num_instruction_lines = prediviz.plot(
+    fig, ax = prediviz.plot(
         propositions,
         constraints,
         receptacle_icon_mapping
@@ -181,20 +181,7 @@ def plot_scene(
     fig.set_size_inches(
         width_inches, (scene.height / scene.width) * width_inches
     )
-
-    if num_instruction_lines == 1:
-        top = 0.85
-    elif num_instruction_lines == 2:
-        top = 0.8
-    elif num_instruction_lines == 3:
-        top = 0.75
-    else:
-        top = 0.7
-
-    plt.subplots_adjust(
-        right=0.98, left=0.02, bottom=0.05, top=top, wspace=0.1, hspace=0.1
-    )
-
+    plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=400)
     else:
@@ -298,8 +285,6 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
 
     # Handle Constraints
     constraints = run_data["evaluation_constraints"]
-    all_constraints = set(constraint["type"] for constraint in constraints)
-    assert "SameArgConstraint" in all_constraints, "samearg not in episode data"
     for idx, constraint in enumerate(constraints):
         if constraint["type"] == "TemporalConstraint":
             digraph = nx.DiGraph(constraint["args"]["dag_edges"])

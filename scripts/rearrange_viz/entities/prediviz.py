@@ -10,20 +10,17 @@ class PrediViz:
         self.config = config
         self.scene = scene
 
-    def plot_instruction(self, ax, legend_column=False):
+    def plot_instruction(self, ax, scene_width, mx_width, mx_lower, mx_upper):
         wrapped_text = ""
         if self.scene.instruction:
             wrapped_text = wrap_text(
                 self.scene.instruction, self.scene.config.max_chars_per_line
             )
-            if legend_column:
-                frac = 0.5 * (self.scene.width + 600) /(self.scene.width + 300 + self.scene.config.is_next_to.width + 300 + 300)
-            else:
-                frac = 0.5
+            frac = 0.5 * (scene_width / mx_width)
 
             ax.text(
                 frac,
-                self.scene.config.instruction_relative_height,
+                self.scene.config.instruction_relative_height * abs(mx_lower)/(mx_upper - mx_lower),
                 wrapped_text,
                 horizontalalignment="center",
                 verticalalignment="bottom",
@@ -78,7 +75,6 @@ class PrediViz:
         toposort = []
         same_args_data = []
         diff_args_data = []
-        legends = False
         for constraint in constraints:
             if constraint["type"] == "TemporalConstraint":
                 toposort = constraint["toposort"]
@@ -96,7 +92,6 @@ class PrediViz:
         all_is_next_tos = self.get_is_next_tos(
             propositions, toposort
         )
-        column = False
         # Plot the legend
         self.legends = []
         self.legend_bounds = []
@@ -115,7 +110,6 @@ class PrediViz:
                         self.legend_bounds.append((
                             current_height_lower, current_height_upper, offset
                         ))
-                        column = True
             if same_args_data:
                 self.legends.append(
                     SameArgsLegend(
@@ -125,7 +119,6 @@ class PrediViz:
                 self.legend_bounds.append((
                     height_lower, height_upper, 0
                 ))
-                column = True
             if diff_args_data:
                 self.legends.append(
                     DiffArgsLegend(
@@ -135,47 +128,91 @@ class PrediViz:
                 self.legend_bounds.append((
                     height_lower, height_upper, 0
                 ))
-                column = True
+        range_to_num = {}
+        range_to_current_height = {}
+        range_to_consumed_space = {}
 
-            range_to_num = {}
-            range_to_current_height = {}
-            range_to_consumed_space = {}
-            for legend, bound in zip(self.legends, self.legend_bounds):
-                if bound not in range_to_num:
-                    range_to_num[bound] = 0
-                    range_to_consumed_space[bound] = 0
-                range_to_num[bound] += 1
-                range_to_current_height[bound] = 0
-                range_to_consumed_space[bound] += legend.height  + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+        # Precompute column assignments
+        for legend, bound in zip(self.legends, self.legend_bounds):
+            if bound not in range_to_num:
+                range_to_num[bound] = 0
+                range_to_consumed_space[bound] = 0
+            range_to_num[bound] += 1
+            range_to_current_height[bound] = 0
+            range_to_consumed_space[bound] += legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+
+        # Compute necessary columns for each bound
+        bounds_to_columns = {}
+        for bound in range_to_consumed_space.keys():
+            (current_height_lower, current_height_upper, offset) = bound
+            available_space = (current_height_upper - current_height_lower)
+            consumed_space = range_to_consumed_space[bound]
             
-            for legend, bound in zip(self.legends, self.legend_bounds):
-                (current_height_lower, current_height_upper, offset) = bound
+            # Calculate how many columns are needed
+            if consumed_space > available_space:
+                num_columns = (consumed_space // available_space) + 1
+            else:
+                num_columns = 1
+            bounds_to_columns[bound] = num_columns
 
-                available_space = (current_height_upper - current_height_lower)
-                consumed_space = range_to_consumed_space[bound]
-                num_spaces = range_to_num[bound] + 1
+        # Distribute legends among the columns
+        column_legend_lists = {bound: [[] for _ in range(bounds_to_columns[bound])] for bound in bounds_to_columns.keys()}
+        column_heights = {bound: [0] * bounds_to_columns[bound] for bound in bounds_to_columns.keys()}
 
-                spacing = (available_space - consumed_space) / num_spaces
-                legend_space = legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
-                legend_origin = - offset - range_to_current_height[bound] - spacing - legend_space
-                legend.plot((self.scene.width, legend_origin), ax)
-                range_to_current_height[bound] += legend_space + spacing
-            if hasattr(self, "legends"):
-                width = self.legends[-1].width
-                ax.set_xlim(0, self.scene.width + 300 + width + 300)
+        for legend, bound in zip(self.legends, self.legend_bounds):
+            num_columns = bounds_to_columns[bound]
+            min_height_column = min(range(num_columns), key=lambda col: column_heights[bound][col])
+            column_legend_lists[bound][min_height_column].append(legend)
+            column_heights[bound][min_height_column] += legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+
+        # Plot legends
+        mx_num_columns = 0
+        mx_width = self.scene.width
+        max_column_upper = height_upper
+        min_column_lower = height_lower
+
+        for bound in range_to_num.keys():
+            num_columns = bounds_to_columns[bound]
+            mx_num_columns = max(num_columns, mx_num_columns)
+            column_width = self.scene.config.is_next_to.width
+            (current_height_lower, current_height_upper, offset) = bound
+            available_space = (current_height_upper - current_height_lower)
+
+            for col in range(num_columns):
+                current_height = column_heights[bound][col]
+                if current_height > available_space:
+                    # Center align legends vertically
+                    total_legend_height = column_heights[bound][col]
+                    vertical_offset = (available_space - total_legend_height) / 2
+                else:
+                    vertical_offset = 0
+
+                current_height = vertical_offset
+                for legend in column_legend_lists[bound][col]:
+                    legend_space = legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+                    legend_origin = -offset - current_height - legend_space
+                    max_column_upper = max(max_column_upper, legend_origin + legend.height + legend.top_pad + legend.bottom_pad)
+                    min_column_lower = min(min_column_lower, legend_origin)
+                    legend_left = self.scene.width + col * (column_width + legend.horizontal_margin)
+                    legend.plot((legend_left, legend_origin), ax)
+                    mx_width = max(mx_width, legend_left + legend.width + legend.horizontal_margin)
+                    current_height += legend_space
+
+        if hasattr(self, "legends"):
+            ax.set_xlim(0, mx_width)
+            ax.set_ylim(min_column_lower, max_column_upper)
         else:
+            mx_width = self.scene.width
             ax.set_xlim(0, self.scene.width)
-        ax.set_ylim(height_lower, height_upper)
-    
+            ax.set_ylim(height_lower, height_upper)
+            
         # Add instruction on top
-        wrapped_text = ""
         if show_instruction:
             wrapped_text = self.plot_instruction(
-                ax, legend_column=column
+                ax, self.scene.width, mx_width, min_column_lower, max_column_upper
             )
-        num_instruction_lines = wrapped_text.count("\n") + 1
 
         ax.axis('off')
 
-        return fig, ax, num_instruction_lines
+        return fig, ax
         
