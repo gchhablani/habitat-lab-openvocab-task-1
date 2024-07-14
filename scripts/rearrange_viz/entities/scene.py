@@ -53,10 +53,12 @@ class Scene:
                                     0,
                                     (5, 10),
                                 )  # Dotted line for multiple objects
+                                label = str(number)
                             else:
                                 line_style = (
                                     "-"  # Solid line for single object
                                 )
+                                label = None
                             self.add_arrow(
                                 ax,
                                 object_obj.center_position,
@@ -65,6 +67,7 @@ class Scene:
                                 height_upper=height_upper,
                                 curved=True,
                                 color=color,
+                                label=label,
                             )
 
     def plot_object_to_room_lines(
@@ -88,8 +91,10 @@ class Scene:
                         0,
                         (5, 10),
                     )  # Dotted line for multiple objects
+                    label = str(number)
                 else:
                     line_style = "-"  # Solid line for single object
+                    label = None
 
                 self.add_arrow(
                     ax,
@@ -99,6 +104,7 @@ class Scene:
                     height_upper=height_upper,
                     curved=True,
                     color=color,
+                    label=label,
                 )
 
     def add_arrow(
@@ -110,15 +116,28 @@ class Scene:
         height_upper=None,
         curved=True,
         color=(1, 1, 1, 1),
+        label=None,  # New argument for the label text
     ):
         x0, y0 = obj_loc
         x1, y1 = room_loc
         dx, dy = x1 - x0, y1 - y0
 
         if curved:
+            def get_curve_midpoint(x0, y0, ctrl_x, ctrl_y, x1, y1):
+                # Given control points
+                P0 = np.array([x0, y0])
+                P1 = np.array([ctrl_x, ctrl_y])
+                P2 = np.array([x1, y1])
+
+                # Calculate midpoint using the formula for quadratic Bezier curve
+                t = 0.5
+                midpoint = (1 - t)**2 * P0 + 2 * (1 - t) * t * P1 + t**2 * P2
+
+                return midpoint
+
             # Calculate control points for the Bézier curve
-            ctrl_x = (x0 + x1) / 2 # + dy / 2
-            ctrl_y = min((y0 + y1) / 2 + abs(dx) / 2, height_upper)  # Curve upwards
+            ctrl_x = (x0 + x1) / 2
+            ctrl_y = min((y0 + y1) / 2 + abs(dx) / 2, height_upper)
 
             # Define path for the curved arrow
             path_data = [
@@ -167,7 +186,21 @@ class Scene:
             )
             ax.add_patch(arrow_head)
 
+            # Add label on top of the arrow
+            if label:
+                mid_vert = get_curve_midpoint(x0, y0, ctrl_x, ctrl_y, x1, y1)
+                ax.text(
+                    mid_vert[0], mid_vert[1], label,
+                    ha='center', va='center',
+                    fontsize=self.config.arrow.label_fontsize,
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor=color, edgecolor='white', linewidth=1)
+                )
+
+
         else:
+            mid_x = (x0 + x1) / 2
+            mid_y = (y0 + y1) / 2
+
             arrow = FancyArrow(
                 x0,
                 y0,
@@ -183,6 +216,15 @@ class Scene:
                 overhang=self.config.arrow.overhang,
             )
             ax.add_patch(arrow)
+
+            # Add label on top of the arrow
+            if label:
+                ax.text(
+                    mid_x, mid_y, label,
+                    ha='center', va='center',
+                    fontsize=self.config.arrow.label_fontsize,
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor=color, edgecolor='white', linewidth=1)
+                )
 
     def plot_a_row_of_rooms(self, ax, current_rooms_to_plot, target_width, current_row_height):
         current_row_height -= max(

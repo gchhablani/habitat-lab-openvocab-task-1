@@ -81,6 +81,7 @@ scene:
     head_width: 50
     linewidth: 2
     overhang: 0.9
+    label_fontsize: 12
   target_width: 6000
   temporal_scene_margin: 100
   instruction_text_size: 20
