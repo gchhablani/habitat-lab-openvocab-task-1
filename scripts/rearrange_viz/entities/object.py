@@ -12,12 +12,7 @@ def get_object_color(object_id):
     if InstanceColorMap.has_color(object_id):
         color = InstanceColorMap.get_color(object_id)
     else:
-        color = category_color_map[
-            object_category_map[
-                "_".join(object_id.split("_")[:-1])
-            ]
-        ]
-        InstanceColorMap.set_color(object_id, color)
+        raise NotImplementedError
     return color
 
 

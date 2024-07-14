@@ -4,7 +4,7 @@ from matplotlib.patches import FancyArrow, PathPatch
 from matplotlib.path import Path
 
 from .utils import sort_rooms, redistribute_target_width_to_rooms
-from .constants import color_palette, BACKGROUND_COLOR
+from .constants import BACKGROUND_COLOR
 
 
 class Scene:
@@ -27,14 +27,11 @@ class Scene:
         function_name,
         ax,
         color=None,
-        modify_object_color=False,
     ):
         for object_name in object_names:
             for room in self.rooms:
                 object_obj = room.find_object_by_id(object_name)
                 if object_obj:
-                    if modify_object_color:
-                        object_obj.change_rectangle_color(color)
                     for receptacle_name in receptacle_names:
                         receptacle_objs = []
                         for r_room in self.rooms:
@@ -69,7 +66,7 @@ class Scene:
                             )
 
     def plot_object_to_room_lines(
-        self, object_names, room_names, number, ax, color=None, modify_object_color=False,
+        self, object_names, room_names, number, ax, color=None,
     ):
         source_objects = []
         target_rooms = []
@@ -77,8 +74,6 @@ class Scene:
             for room in self.rooms:
                 object_obj = room.find_object_by_id(object_name)
                 if object_obj:
-                    if modify_object_color:
-                        object_obj.change_rectangle_color(color)
                     source_objects.append(object_obj)
         for room_name in room_names:
             for r_room in self.rooms:
@@ -273,11 +268,12 @@ class Scene:
                 object_names = args["object_names"]
                 number = args["number"]
 
-                # Cycle through the color palette for each proposition
-                color = list(color_palette.values())[
-                    color_index % len(color_palette)
-                ]
-                color_index += 1
+                # # Cycle through the color palette for each proposition
+                # color = list(color_palette.values())[
+                #     color_index % len(color_palette)
+                # ]
+                # color_index += 1
+                color = proposition["color"]
                 if function_name in ["is_inside", "is_on_top"]:
                     receptacle_names = args["receptacle_names"]
                     self.plot_object_to_receptacle_lines(
@@ -287,7 +283,6 @@ class Scene:
                         function_name,
                         ax,
                         color,
-                        modify_object_color=True
                     )
                 elif function_name == "is_in_room":
                     room_names = args["room_names"]
@@ -297,7 +292,6 @@ class Scene:
                         number,
                         ax,
                         color,
-                        modify_object_color=True
                     )
 
 

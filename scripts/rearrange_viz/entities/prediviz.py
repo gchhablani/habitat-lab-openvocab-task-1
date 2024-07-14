@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
-from .constants import BACKGROUND_COLOR
+from .constants import BACKGROUND_COLOR, color_palette
 from .legends.is_next_to_legend import IsNextToLegend
 from .legends.same_args_legend import SameArgsLegend
+from .instance_color_map import InstanceColorMap
 from .legends.diff_args_legend import DiffArgsLegend
 from .utils import wrap_text
 
@@ -63,6 +64,31 @@ class PrediViz:
             is_next_tos.append(current_is_next_tos)
         return is_next_tos
 
+    def parse_propositions_and_set_instance_colors(self, propositions):
+        prop_idx = 0
+        for prop in propositions:
+            color = list(color_palette.values())[
+                prop_idx % len(color_palette)
+            ]
+            prop["color"] = color
+            if prop["function_name"] in ["is_on_top", "is_inside", "is_in_room", "is_on_floor"]:
+                object_names = prop["args"]["object_names"]
+                for object_name in object_names:
+                    if not InstanceColorMap.has_color(object_name):
+                        InstanceColorMap.set_color(object_name, color)
+            prop_idx += 1
+
+        for room in self.scene.rooms:
+            for object in room.objects:
+                color = list(color_palette.values())[
+                    prop_idx % len(color_palette)
+                ]
+                if not InstanceColorMap.has_color(object.object_id):
+                    InstanceColorMap.set_color(object.object_id, color)
+                    prop_idx += 1
+
+        return propositions
+
     def plot(self,
         propositions,
         constraints,
@@ -83,7 +109,7 @@ class PrediViz:
                 same_args_data.append(constraint["same_args_data"])
             elif constraint["type"] == "DifferentArgConstraint":
                 diff_args_data.append(constraint["diff_args_data"])
-
+        propositions = self.parse_propositions_and_set_instance_colors(propositions)
         fig, ax, height_lower, height_upper, prop_to_height_range = self.scene.plot(
             propositions,
             toposort,

@@ -182,15 +182,29 @@ receptacle_properties = {
 
 # Define a color palette for the propositions
 color_palette = {
-    "Coral": "#FF7F50",
-    "Gold": "#FFD700",
-    "Cyan": "#00FFFF",
-    "Mint Green": "#98FF98",
-    "Lavender": "#E6E6FA",
-    "Salmon": "#FA8072",
-    "Peach": "#FFDAB9",
-    "Pink": "#FFC0CB",
+    "Bright Red": "#FF0000",
+    "Bright Orange": "#FFA500",
+    "Bright Yellow": "#FFFF00",
+    "Bright Green": "#00FF00",
+    "Bright Cyan": "#00FFFF",
+    "Bright Blue": "#0000FF",
+    "Bright Magenta": "#FF00FF",
+    "Bright Pink": "#FF69B4",
+    "Bright Purple": "#800080",
+    "Bright Lime": "#BFFF00",
+    "Bright Teal": "#00CED1",
+    "Bright Turquoise": "#40E0D0",
+    "Bright Coral": "#FF7F50",
+    "Bright Lavender": "#E6E6FA",
+    "Bright Indigo": "#4B0082",
+    "Bright Gold": "#FFD700",
+    "Bright Peach": "#FFDAB9",
+    "Bright Mint": "#98FF98",
+    "Bright Rose": "#FF007F",
+    "Bright Sky Blue": "#87CEEB"
 }
+
+
 
 BACKGROUND_COLOR = "#3E4C60"
 LEGEND_BACKGROUND_COLOR = "#2D3541"
