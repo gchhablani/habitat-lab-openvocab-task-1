@@ -16,30 +16,31 @@ category_color_map = {
 
 # Dictionary mapping receptacle type to normalized RGB tuple
 receptacle_color_map = {
-    "table": (0.95, 0.8, 0.2),  # Gold
-    "couch": (1.0, 0.6, 0.4),  # Coral
-    "chair": (0.8, 0.5, 0.3),  # Copper
-    "shelves": (1.0, 0.5, 0.2),  # Tangerine
-    "stand": (0.9, 0.4, 0.1),  # Tawny
-    "chest_of_drawers": (1.0, 0.6, 0.5),  # Peach
-    "washer_dryer": (0.9, 0.3, 0.2),  # Tomato
-    "bathtub": (0.8, 0.2, 0.0),  # Vermilion
-    "stool": (1.0, 0.4, 0.3),  # Salmon
-    "bench": (0.95, 0.5, 0.3),  # Apricot
-    "cabinet": (0.85, 0.4, 0.2),  # Burnt Sienna
-    "counter": (0.95, 0.6, 0.1),  # Amber
-    "fridge": (1.0, 0.8, 0.2),  # Gold
-    "bed": (0.95, 0.95, 0.9),  # Ivory
-    "trashcan": (0.5, 0.5, 0.5),  # Gray
-    "microwave": (0.6, 0.8, 1.0),  # Light Blue
-    "dishwasher": (0.7, 0.7, 1.0),  # Lavender
-    "oven": (0.9, 0.3, 0.3),  # Dark Red
-    "sink": (0.7, 0.9, 1.0),  # Light Blue
-    "toilet": (0.7, 0.9, 1.0),  # Light Blue (Similar to sink)
-    "wardrobe": (0.4, 0.2, 0.1),  # Dark Brown
-    "shower": (0.6, 0.8, 1.0),  # Light Blue (Similar to sink and microwave)
-    "filing_cabinet": (0.85, 0.4, 0.2),  # Burnt Sienna
+    "table": (0.95, 0.8, 0.2),          # Gold
+    "couch": (1.0, 0.6, 0.4),           # Coral
+    "chair": (0.8, 0.5, 0.3),           # Copper
+    "shelves": (1.0, 0.5, 0.2),         # Tangerine
+    "stand": (0.9, 0.4, 0.1),           # Tawny
+    "chest_of_drawers": (1.0, 0.6, 0.5),# Peach
+    "washer_dryer": (0.9, 0.3, 0.2),    # Tomato
+    "bathtub": (0.8, 0.2, 0.0),         # Vermilion
+    "stool": (1.0, 0.4, 0.3),           # Salmon
+    "bench": (0.95, 0.5, 0.3),          # Apricot
+    "cabinet": (0.85, 0.4, 0.2),        # Burnt Sienna
+    "counter": (0.95, 0.6, 0.1),        # Amber
+    "fridge": (0.3, 0.75, 0.93),        # Light Sky Blue
+    "bed": (0.94, 0.9, 0.55),           # Pale Goldenrod
+    "trashcan": (0.5, 0.5, 0.5),        # Gray
+    "microwave": (0.4, 0.8, 0.8),       # Medium Turquoise
+    "dishwasher": (0.6, 0.8, 1.0),      # Light Blue
+    "oven": (0.9, 0.3, 0.3),            # Dark Red
+    "sink": (0.7, 0.9, 1.0),            # Light Blue
+    "toilet": (0.6, 0.9, 0.7),          # Light Green
+    "wardrobe": (0.5, 0.3, 0.1),        # Saddle Brown
+    "shower": (0.5, 0.5, 1.0),          # Cornflower Blue
+    "filing_cabinet": (0.9, 0.6, 0.2),  # Dark Goldenrod
 }
+
 
 object_category_map = {
     "action_figure": "toys",
@@ -182,28 +183,28 @@ receptacle_properties = {
 
 # Define a color palette for the propositions
 color_palette = {
-    "Bright Red": "#FF0000",
-    "Bright Orange": "#FFA500",
-    "Bright Yellow": "#FFFF00",
-    "Bright Green": "#00FF00",
+    "Bright Red": "#FF5733",
+    "Bright Orange": "#FF8C00",
+    "Bright Yellow": "#FFD700",
+    "Bright Green": "#32CD32",
     "Bright Cyan": "#00FFFF",
-    "Bright Blue": "#0000FF",
-    "Bright Magenta": "#FF00FF",
-    "Bright Pink": "#FF69B4",
-    "Bright Purple": "#800080",
+    "Bright Blue": "#1E90FF",
+    "Bright Purple": "#9932CC",
+    "Bright Pink": "#FF1493",
     "Bright Lime": "#BFFF00",
-    "Bright Teal": "#00CED1",
-    "Bright Turquoise": "#40E0D0",
-    "Bright Coral": "#FF7F50",
-    "Bright Lavender": "#E6E6FA",
-    "Bright Indigo": "#4B0082",
-    "Bright Gold": "#FFD700",
-    "Bright Peach": "#FFDAB9",
+    "Bright Teal": "#40E0D0",
+    "Bright Coral": "#FF7256",
+    "Bright Gold": "#FFC300",
+    "Bright Magenta": "#FF00FF",
+    "Bright Turquoise": "#00CED1",
+    "Light Indigo": "#7B68EE",
+    "Bright Violet": "#9400D3",
     "Bright Mint": "#98FF98",
+    "Bright Peach": "#FFDAB9",
     "Bright Rose": "#FF007F",
-    "Bright Sky Blue": "#87CEEB"
+    "Bright Sky Blue": "#87CEEB",
+    "Bright Fuchsia": "#FF00FF"
 }
-
 
 
 BACKGROUND_COLOR = "#3E4C60"
