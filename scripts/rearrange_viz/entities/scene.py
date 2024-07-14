@@ -27,6 +27,7 @@ class Scene:
         function_name,
         ax,
         color=None,
+        height_upper=None,
     ):
         for object_name in object_names:
             for room in self.rooms:
@@ -61,12 +62,13 @@ class Scene:
                                 object_obj.center_position,
                                 arrow_dest_position,
                                 line_style,
+                                height_upper=height_upper,
                                 curved=True,
                                 color=color,
                             )
 
     def plot_object_to_room_lines(
-        self, object_names, room_names, number, ax, color=None,
+        self, object_names, room_names, number, ax, color=None, height_upper=None
     ):
         source_objects = []
         target_rooms = []
@@ -94,6 +96,7 @@ class Scene:
                     object_obj.center_position,
                     room_obj.center_position,
                     line_style,
+                    height_upper=height_upper,
                     curved=True,
                     color=color,
                 )
@@ -104,6 +107,7 @@ class Scene:
         obj_loc,
         room_loc,
         line_style,
+        height_upper=None,
         curved=True,
         color=(1, 1, 1, 1),
     ):
@@ -113,8 +117,8 @@ class Scene:
 
         if curved:
             # Calculate control points for the Bézier curve
-            ctrl_x = (x0 + x1) / 2 + dy / 2
-            ctrl_y = (y0 + y1) / 2 + abs(dx) / 2  # Curve upwards
+            ctrl_x = (x0 + x1) / 2 # + dy / 2
+            ctrl_y = min((y0 + y1) / 2 + abs(dx) / 2, height_upper)  # Curve upwards
 
             # Define path for the curved arrow
             path_data = [
@@ -259,7 +263,7 @@ class Scene:
         return ax, height_lower, height_upper
 
 
-    def plot_proposition_lines(self, ax, propositions):
+    def plot_proposition_lines(self, ax, propositions, height_upper):
         color_index = 0
         for proposition in propositions:
             function_name = proposition["function_name"]
@@ -283,6 +287,7 @@ class Scene:
                         function_name,
                         ax,
                         color,
+                        height_upper,
                     )
                 elif function_name == "is_in_room":
                     room_names = args["room_names"]
@@ -292,6 +297,7 @@ class Scene:
                         number,
                         ax,
                         color,
+                        height_upper,
                     )
 
 
@@ -312,7 +318,7 @@ class Scene:
             all_mentioned_rooms,
         )
 
-        self.plot_proposition_lines(ax, propositions)
+        self.plot_proposition_lines(ax, propositions, height_offset)
 
         return ax, height_lower, height_upper
 

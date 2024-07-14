@@ -34,9 +34,10 @@ room:
   bottom_pad: 170
   left_pad: 20
   right_pad: 20
-  placeholder_height: 0.65 # of full height above bottom pad
+  placeholder_height: 0.85 # of room height
   objects_height: 0.75 # of full height above bottom pad
   min_width: 300
+  min_height: 700
   object_horizontal_margin_fraction: 0.05 # Fraction on each side to skip
   receptacle_horizontal_margin_fraction: 0.025 # Fraction on each side to skip
   text_size: 13

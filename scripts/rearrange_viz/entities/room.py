@@ -69,7 +69,7 @@ class Room:
     def init_heights(self):
         # Init with min receptacle height
         self.room_height = (
-            self.global_config.receptacle.target_height
+            self.config.min_height
         )
         if self.objects:
             # NOTE: Here we are assuming that all objects have some initial recep
@@ -229,12 +229,11 @@ class Room:
 
     def plot_placeholders(self, ax, actual_origin):
         self.center_position = (
-            actual_origin[0] + self.room_width / 2,
+            actual_origin[0] + self.width / 2,
             actual_origin[1]
-            + self.config.bottom_pad
             + (
                 self.config.placeholder_height
-                * self.height
+                * self.room_height
             ),
         )
         if self.plot_placeholder:
