@@ -28,3 +28,8 @@ class InstanceColorMap:
     def has_color(cls, instance_id):
         """Checks if a color exists for a given instance ID."""
         return instance_id in cls._instance_colors
+    
+    @classmethod
+    def reset_map(cls):
+        cls._instance_colors = {}
+    

@@ -183,29 +183,28 @@ receptacle_properties = {
 
 # Define a color palette for the propositions
 color_palette = {
-    "Bright Red": "#FF5733",
-    "Bright Orange": "#FF8C00",
-    "Bright Yellow": "#FFD700",
-    "Bright Green": "#32CD32",
-    "Bright Cyan": "#00FFFF",
-    "Bright Blue": "#1E90FF",
-    "Bright Purple": "#9932CC",
-    "Bright Pink": "#FF1493",
-    "Bright Lime": "#BFFF00",
-    "Bright Teal": "#40E0D0",
-    "Bright Coral": "#FF7256",
-    "Bright Gold": "#FFC300",
-    "Bright Magenta": "#FF00FF",
-    "Bright Turquoise": "#00CED1",
-    "Light Indigo": "#7B68EE",
-    "Bright Violet": "#9400D3",
-    "Bright Mint": "#98FF98",
-    "Bright Peach": "#FFDAB9",
-    "Bright Rose": "#FF007F",
-    "Bright Sky Blue": "#87CEEB",
-    "Bright Fuchsia": "#FF00FF"
+    "Soft Coral": "#FF6F61",
+    "Warm Orange": "#FFA07A",
+    "Sunshine Yellow": "#FFD700",
+    "Fresh Green": "#90EE90",
+    "Cool Cyan": "#00CED1",
+    "Sky Blue": "#87CEEB",
+    "Lavender": "#E6E6FA",
+    "Peach": "#FFDAB9",
+    "Blush Pink": "#FFB6C1",
+    "Mint": "#98FF98",
+    "Soft Violet": "#DDA0DD",
+    "Pale Gold": "#EEE8AA",
+    "Turquoise": "#40E0D0",
+    "Light Purple": "#9370DB",
+    "Light Blue": "#ADD8E6",
+    "Pale Pink": "#FADADD",
+    "Periwinkle": "#CCCCFF",
+    "Light Lime": "#BFFF00",
+    "Soft Teal": "#66CDAA",
+    "Light Rose": "#FFCCE5",
+    "Soft Gold": "#FFD700"
 }
-
 
 BACKGROUND_COLOR = "#3E4C60"
 LEGEND_BACKGROUND_COLOR = "#2D3541"

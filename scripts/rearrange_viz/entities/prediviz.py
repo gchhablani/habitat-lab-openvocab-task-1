@@ -65,6 +65,7 @@ class PrediViz:
         return is_next_tos
 
     def parse_propositions_and_set_instance_colors(self, propositions):
+        InstanceColorMap.reset_map()
         prop_idx = 0
         for prop in propositions:
             color = list(color_palette.values())[
