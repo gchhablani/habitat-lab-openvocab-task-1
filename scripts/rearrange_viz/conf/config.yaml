@@ -10,8 +10,6 @@ object:
   rounding_size: 10
   max_chars_per_line: 9
   on_floor_linewidth: 2
-  on_floor_line_length_ratio: 0.6
-  on_floor_line_margin_ratio: 1.2
 
 receptacle:
   horizontal_margin: 5

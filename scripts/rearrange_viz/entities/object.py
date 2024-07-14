@@ -36,32 +36,6 @@ class Object:
         InstanceColorMap.set_color(self.object_id, color)
         plt.gcf().canvas.draw()
 
-    def plot_on_floor_line(self, ax):
-        assert self.center_position is not None, f"Center position is empty for object: {self.object_id}"
-        line_start = (
-            self.center_position[0]
-            - self.config.on_floor_line_length_ratio * self.config.width,
-            self.center_position[1]
-            - self.config.on_floor_line_margin_ratio * self.config.height,
-        )
-        line_end = (
-            self.center_position[0]
-            + self.config.on_floor_line_length_ratio * self.config.width,
-            self.center_position[1]
-            - self.config.on_floor_line_margin_ratio * self.config.height,
-        )
-        line = ConnectionPatch(
-            xyA=line_start,
-            xyB=line_end,
-            coordsA="data",
-            coordsB="data",
-            axesA=ax,
-            axesB=ax,
-            color="white",
-            linewidth=self.config.on_floor_linewidth,
-        )
-        ax.add_artist(line)
-    
     def plot_text_label(self, ax):
         self.text_position = (
             self.center_position[0],
@@ -89,6 +63,7 @@ class Object:
 
         color = get_object_color(self.object_id)
 
+        # Create the object rectangle
         self.object_rect = FancyBboxPatch(
             (origin[0], origin[1]),
             self.config.width,
@@ -103,16 +78,29 @@ class Object:
 
         ax.add_patch(self.object_rect)
 
+        # Calculate the coordinates of the white border if is_on_floor is True
+        if self.is_on_floor:
+            padding = 0.1 * self.config.width  # Adjust this value as needed
+            border_rect = FancyBboxPatch(
+                (origin[0] - padding, origin[1] - padding),
+                self.config.width + 2 * padding,
+                self.config.height + 2 * padding,
+                edgecolor="white",
+                facecolor="none",
+                linewidth=self.config.on_floor_linewidth,
+                linestyle="-",
+                boxstyle=f"Round, pad=0, rounding_size={self.config.rounding_size}",
+                alpha=1.0,
+            )
+
+            ax.add_patch(border_rect)
+
         self.center_position = (
             origin[0] + self.config.width / 2,
             origin[1] + self.config.height / 2,
         )
 
         self.plot_text_label(ax)
-
-        # Calculate the coordinates based on the center position
-        if self.is_on_floor:
-            self.plot_on_floor_line(ax)
 
         if created_fig:
             return fig, ax
