@@ -128,6 +128,7 @@ def plot_scene(
     propositions,
     constraints,
     receptacle_icon_mapping,
+    cropped_receptacle_icon_mapping,
     instruction=None,
     save_path=None,
     object_to_recep=None,
@@ -172,16 +173,30 @@ def plot_scene(
         config,
         scene
     )
-    fig, ax = prediviz.plot(
+    fig, ax, num_instruction_lines = prediviz.plot(
         propositions,
         constraints,
-        receptacle_icon_mapping
+        receptacle_icon_mapping,
+        cropped_receptacle_icon_mapping,
     )
     width_inches = config.width_inches
     fig.set_size_inches(
         width_inches, (scene.height / scene.width) * width_inches
     )
-    plt.tight_layout()
+
+    if num_instruction_lines == 1:
+        top = 0.85
+    elif num_instruction_lines == 2:
+        top = 0.8
+    elif num_instruction_lines == 3:
+        top = 0.75
+    else:
+        top = 0.7
+
+    plt.subplots_adjust(
+        right=0.98, left=0.02, bottom=0.05, top=top, wspace=0.1, hspace=0.1
+    )
+
     if save_path:
         plt.savefig(save_path, dpi=400)
     else:
@@ -218,12 +233,19 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
             f'receptacles/{"_".join(receptacle_id.split("_")[:-1])}@2x.png'
         )
     }
+    cropped_receptacle_icon_mapping = {
+        receptacle_id: f'cropped_receptacles/{"_".join(receptacle_id.split("_")[:-1])}@2x.png'
+        for receptacle_id in episode_data["recep_to_description"]
+        if os.path.exists(
+            f'cropped_receptacles/{"_".join(receptacle_id.split("_")[:-1])}@2x.png'
+        )
+    }
     run_data = load_run_data(args.run_json, episode_id, loaded_run_data)
 
     # Handle Propositions
     propositions = run_data["evaluation_propositions"]
     # all_functions = set(proposition["function_name"] for proposition in propositions)
-    # assert "is_next_to" in all_functions, "is_next_to not in episode data"
+    # assert "is_inside" in all_functions, "is_next_to not in episode data"
     for proposition in propositions:
         if proposition["function_name"] not in [
             "is_on_top",
@@ -396,6 +418,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
         episode_data,
         run_data,
         receptacle_icon_mapping,
+        cropped_receptacle_icon_mapping,
         propositions,
         constraints,
     )
@@ -500,6 +523,7 @@ def main():
                             temp_episode_data,
                             temp_run_data,
                             temp_receptacle_icon_mapping,
+                            temp_cropped_receptacle_icon_mapping,
                             temp_propositions,
                             temp_constraints,
                         ) = get_episode_data_for_plot(
@@ -549,6 +573,7 @@ def main():
                 episode_data,
                 run_data,
                 receptacle_icon_mapping,
+                cropped_receptacle_icon_mapping,
                 propositions,
                 constraints,
             ) = get_episode_data_for_plot(args, episode_id, loaded_run_data)
@@ -597,6 +622,7 @@ def main():
                     propositions,
                     constraints,
                     receptacle_icon_mapping,
+                    cropped_receptacle_icon_mapping,
                     instruction=run_data["instruction"],
                     save_path=os.path.join(
                         save_directory, f"viz_{episode_id}.png"

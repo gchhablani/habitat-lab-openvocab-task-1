@@ -21,7 +21,7 @@ def calculate_placeholder_heights(image):
     center_height = top_height / 2
     return center_height, top_height
 
-def resize_icon(icon, target_height):
+def resize_icon_height(icon, target_height):
     width, height = icon.size
     scaling_factor = target_height / height
 
@@ -61,7 +61,7 @@ class Receptacle:
 
     def get_icon(self, add_tint=True):
         icon = Image.open(self.icon_path)
-        icon = resize_icon(icon, self.config.target_height)
+        icon = resize_icon_height(icon, self.config.target_height)
         if add_tint:
             color = receptacle_color_map[
                 "_".join(self.receptacle_id.split("_")[:-1])

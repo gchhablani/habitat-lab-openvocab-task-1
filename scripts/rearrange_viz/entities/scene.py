@@ -477,13 +477,13 @@ class Scene:
                     ax.hlines(
                         xmin=0, 
                         xmax=self.width,
-                        y=height_lower - 20,
+                        y=height_lower - self.config.temporal_scene_margin / 2,
                         color="white",
                         linewidth=4,
                         linestyle="-",
                     )
                 max_upper = max(height_upper, max_upper)
-                min_lower = min(height_lower - 40, min_lower)
+                min_lower = min(height_lower - self.config.temporal_scene_margin, min_lower)
                 # Reset room widths 
                 # TODO: Use a better logic to avoid recomputation of widths
                 for room in self.rooms:

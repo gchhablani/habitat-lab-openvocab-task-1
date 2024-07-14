@@ -67,6 +67,7 @@ class PrediViz:
         propositions,
         constraints,
         receptacle_icon_mapping,
+        cropped_receptacle_icon_mapping,
         show_instruction=True,
         ):
         fig, ax = plt.subplots()
@@ -103,7 +104,7 @@ class PrediViz:
                     if is_next_tos:
                         self.legends.append(
                             IsNextToLegend(
-                                self.scene.config.is_next_to, is_next_tos, receptacle_icon_mapping
+                                self.scene.config.is_next_to, is_next_tos, cropped_receptacle_icon_mapping
                             )
                         )
                         current_height_lower, current_height_upper, offset = prop_to_height_range[level_idx]
@@ -113,7 +114,7 @@ class PrediViz:
             if same_args_data:
                 self.legends.append(
                     SameArgsLegend(
-                        self.scene.config.is_next_to, same_args_data, receptacle_icon_mapping
+                        self.scene.config.is_next_to, same_args_data, cropped_receptacle_icon_mapping
                     )
                 )
                 self.legend_bounds.append((
@@ -122,7 +123,7 @@ class PrediViz:
             if diff_args_data:
                 self.legends.append(
                     DiffArgsLegend(
-                        self.scene.config.is_next_to, diff_args_data, receptacle_icon_mapping
+                        self.scene.config.is_next_to, diff_args_data, cropped_receptacle_icon_mapping
                     )
                 )
                 self.legend_bounds.append((
@@ -213,8 +214,8 @@ class PrediViz:
             wrapped_text = self.plot_instruction(
                 ax, self.scene.width, mx_width, min_column_lower, max_column_upper
             )
-
+        num_instruction_lines = wrapped_text.count("\n")+1
         ax.axis('off')
 
-        return fig, ax
+        return fig, ax, num_instruction_lines
         

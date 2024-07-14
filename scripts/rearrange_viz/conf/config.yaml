@@ -2,7 +2,7 @@ defaults:
   - object: default
 
 object:
-  text_margin: -115
+  text_margin: -150
   bottom_text_extra_margin: 50
   width: 100
   height: 100
@@ -55,6 +55,7 @@ scene:
     width: 1500
     height: 1000
     horizontal_margin: 300
+    around_entity_spacing: 200
     object:
       text_margin: -115
       bottom_text_extra_margin: 50
@@ -65,7 +66,7 @@ scene:
       max_chars_per_line: 9
     receptacle:
       horizontal_margin: 5
-      target_height: 300 # 0.35 * full_height
+      target_height: 200 # 0.35 * full_height
       placeholder:
         width: 80
         height: 80
@@ -82,8 +83,9 @@ scene:
     linewidth: 2
     overhang: 0.9
   target_width: 6000
+  temporal_scene_margin: 100
   instruction_text_size: 20
   instruction_relative_height: 1.05
   max_chars_per_line: 80
 
-width_inches: 25
+width_inches: 20

@@ -77,12 +77,31 @@ class IsNextToLegend:
             self.right_sets.append(right_set)
 
     def set_height(self):
-        self.left_set_length = sum(len(left_set) for left_set in self.left_sets)
-        self.right_set_length = sum(len(right_set) for right_set in self.right_sets)
+        self.left_set_length = 0
+        self.left_consumed_space = 0
+        for left_set, G in zip(self.left_sets, self.graphs):
+            for node in left_set:
+                self.left_set_length += 1
+                entity_id, entity_type = G.nodes[node]['entity']
+                if entity_type == "object":
+                    self.left_consumed_space += self.config.object.height
+                elif entity_type == "receptacle":
+                    self.left_consumed_space += self.config.receptacle.target_height
+
+        self.right_set_length = 0
+        self.right_consumed_space = 0
+        for right_set, G in zip(self.right_sets, self.graphs):
+            for node in right_set:
+                self.right_set_length += 1
+                entity_id, entity_type = G.nodes[node]['entity']
+                if entity_type == "object":
+                    self.right_consumed_space += self.config.object.height
+                elif entity_type == "receptacle":
+                    self.right_consumed_space += self.config.receptacle.target_height
         self.height = max(
-            (self.left_set_length + 1) * 2 + self.left_set_length,
-            (self.right_set_length + 1) * 2 + self.right_set_length
-        ) * self.config.object.height
+            self.left_consumed_space + self.left_set_length * self.config.around_entity_spacing,
+            self.right_consumed_space + self.right_set_length * self.config.around_entity_spacing
+        )
 
     def plot_entity_column(
         self, ax, G, entity_set, midpoint, current_height, spacing
