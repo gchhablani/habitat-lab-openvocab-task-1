@@ -108,10 +108,10 @@ def create_samples(json_file, output_dir, sample_set_size, num_directories, over
         
 
 if __name__ == "__main__":
-    json_file = "viz_rearrange_30k_sample_1k_v2_run_data.json"
-    output_dir = "viz_rearrange_30k_1k_5_splits"
-    sample_set_size = 1000 # out of all, pick 1k
-    num_directories = 5 # make 3 sample directories
-    overlap_samples = 100
+    json_file = "spatial_30_july12_200_run_data.json"
+    output_dir = "spatial_30_july12_200_2_splits"
+    sample_set_size = 198 # out of all, pick 1k
+    num_directories = 2 # make 3 sample directories
+    overlap_samples = 0
     
     create_samples(json_file, output_dir, sample_set_size, num_directories, overlap_samples)
