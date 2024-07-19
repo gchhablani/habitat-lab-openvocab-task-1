@@ -11,17 +11,24 @@ class PrediViz:
         self.config = config
         self.scene = scene
 
-    def plot_instruction(self, ax, scene_width, mx_width, mx_lower, mx_upper):
-        wrapped_text = ""
+    def compute_extra_height(self):
         if self.scene.instruction:
             wrapped_text = wrap_text(
                 self.scene.instruction, self.scene.config.max_chars_per_line
             )
-            frac = 0.5 * (scene_width / mx_width)
+            number_of_lines = wrapped_text.count("\n") + 1
+            self.extra_instruction_height = self.scene.config.per_instruction_line_height * number_of_lines
 
+    def plot_instruction(self, ax, scene_width, mx_width, height_lower, height_upper):
+        wrapped_text = ""
+        if self.scene.instruction:
+            frac = 0.5 * (scene_width / mx_width)
+            wrapped_text = wrap_text(
+                self.scene.instruction, self.scene.config.max_chars_per_line
+            )
             ax.text(
                 frac,
-                self.scene.config.instruction_relative_height * abs(mx_lower)/(mx_upper - mx_lower),
+                (height_upper - height_lower - self.extra_instruction_height / 2) / (height_upper - height_lower),
                 wrapped_text,
                 horizontalalignment="center",
                 verticalalignment="bottom",
@@ -228,21 +235,26 @@ class PrediViz:
                     mx_width = max(mx_width, legend_left + legend.width + legend.horizontal_margin)
                     current_height += legend_space + column_spacing
 
+        
         if hasattr(self, "legends"):
-            ax.set_xlim(0, mx_width)
-            ax.set_ylim(min_column_lower, max_column_upper)
+            final_width = mx_width
+            final_upper = max_column_upper
+            final_lower = min_column_lower
         else:
-            mx_width = self.scene.width
-            ax.set_xlim(0, self.scene.width)
-            ax.set_ylim(height_lower, height_upper)
-            
+            final_width = self.scene.width
+            final_upper = height_upper
+            final_lower = height_lower
+
         # Add instruction on top
         if show_instruction:
+            self.compute_extra_height()
+            final_upper += self.extra_instruction_height
             wrapped_text = self.plot_instruction(
-                ax, self.scene.width, mx_width, min_column_lower, max_column_upper
+                ax, self.scene.width, mx_width, final_lower, final_upper
             )
-        num_instruction_lines = wrapped_text.count("\n")+1
+        ax.set_xlim(0, final_width)
+        ax.set_ylim(final_lower, final_upper)
         ax.axis('off')
 
-        return fig, ax, num_instruction_lines
+        return fig, ax, final_upper - final_lower, final_width
         

@@ -86,7 +86,7 @@ class SameArgsLegend:
                 elif entity_type == "receptacle":
                     self.left_consumed_space += self.config.receptacle.target_height
                 else:
-                    self.right_consumed_space += self.config.room.height
+                    self.left_consumed_space += self.config.room.height
 
         self.right_set_length = 0
         self.right_consumed_space = 0

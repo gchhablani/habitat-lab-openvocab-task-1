@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import FancyArrow, PathPatch
 from matplotlib.path import Path
+import random
 
 from .utils import sort_rooms, redistribute_target_width_to_rooms
 from .constants import BACKGROUND_COLOR
@@ -30,6 +31,7 @@ class Scene:
         height_upper=None,
     ):
         for object_name in object_names:
+            arrow_idx = 0
             for room in self.rooms:
                 object_obj = room.find_object_by_id(object_name)
                 if object_obj:
@@ -66,9 +68,11 @@ class Scene:
                                 line_style,
                                 height_upper=height_upper,
                                 curved=True,
+                                arrow_idx=arrow_idx,
                                 color=color,
                                 label=label,
                             )
+                            arrow_idx += 1
 
     def plot_object_to_room_lines(
         self, object_names, room_names, number, ax, color=None, height_upper=None
@@ -85,6 +89,7 @@ class Scene:
                 if r_room.room_id == room_name:
                     target_rooms.append(r_room)
         for object_obj in source_objects:
+            arrow_idx = 0
             for room_obj in target_rooms:
                 if len(object_names) > number:
                     line_style = (
@@ -103,9 +108,11 @@ class Scene:
                     line_style,
                     height_upper=height_upper,
                     curved=True,
+                    arrow_idx=arrow_idx,
                     color=color,
                     label=label,
                 )
+                arrow_idx += 1
 
     def add_arrow(
         self,
@@ -115,6 +122,7 @@ class Scene:
         line_style,
         height_upper=None,
         curved=True,
+        arrow_idx=0,
         color=(1, 1, 1, 1),
         label=None,  # New argument for the label text
     ):
@@ -136,7 +144,7 @@ class Scene:
                 return midpoint
 
             # Calculate control points for the Bézier curve
-            ctrl_x = (x0 + x1) / 2
+            ctrl_x = (x0 + x1) / 2 + dy / 2
             ctrl_y = min((y0 + y1) / 2 + abs(dx) / 2, height_upper)
 
             # Define path for the curved arrow

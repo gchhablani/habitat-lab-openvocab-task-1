@@ -8,7 +8,7 @@ object:
   height: 100
   text_size: 11
   rounding_size: 10
-  max_chars_per_line: 9
+  max_chars_per_line: 8
   on_floor_linewidth: 2
 
 receptacle:
@@ -18,7 +18,7 @@ receptacle:
     width: 100
     height: 100
     rounding_size: 10
-  placeholder_margin: 40
+  placeholder_margin: 60
 
 room:
   placeholder:
@@ -34,7 +34,7 @@ room:
   right_pad: 20
   placeholder_height: 0.85 # of room height
   objects_height: 0.75 # of full height above bottom pad
-  min_width: 300
+  min_width: 450
   min_height: 700
   object_horizontal_margin_fraction: 0.05 # Fraction on each side to skip
   receptacle_horizontal_margin_fraction: 0.025 # Fraction on each side to skip
@@ -54,9 +54,9 @@ scene:
     width: 1500
     height: 1000
     horizontal_margin: 300
-    around_entity_spacing: 200
+    around_entity_spacing: 300
     object:
-      text_margin: -115
+      text_margin: -150
       bottom_text_extra_margin: 50
       width: 100
       height: 100
@@ -85,7 +85,7 @@ scene:
   target_width: 6000
   temporal_scene_margin: 100
   instruction_text_size: 20
-  instruction_relative_height: 1.05
+  per_instruction_line_height: 150
   max_chars_per_line: 100
 
 width_inches: 20

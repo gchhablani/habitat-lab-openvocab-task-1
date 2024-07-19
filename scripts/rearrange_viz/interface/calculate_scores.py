@@ -4,6 +4,10 @@ from collections import Counter
 def calculate_scores(data):
     data = [entry for entry in data if "task_correctness" in entry and entry["task_correctness"] and "eval_correctness" in entry and entry["eval_correctness"]]
     total_tasks = len(data)
+    all_indices = [entry['index'] for entry in data if "task_correctness" in entry and entry["task_correctness"] and "eval_correctness" in entry and entry["eval_correctness"]]
+    missing_indices = set(list(range(0, 99))).difference(all_indices)
+    print(missing_indices)
+    
     correct_tasks = sum(1 for entry in data if entry["task_correctness"] == "yes")
     task_correctness_score = (correct_tasks / total_tasks) * 100 if total_tasks > 0 else 0
 
@@ -19,7 +23,7 @@ def calculate_scores(data):
     return total_tasks, task_correctness_score, eval_correctness_score, top_incorrect_task_remarks, top_incorrect_eval_remarks
 
 def main():
-    file_path = "viz_rearrange_30k_1k_v3_5_splits/sample_4/merged_annotations.json"  # Change this to your file path
+    file_path = "spatial_30_july12_200_2_splits/sample_0/merged_annotations.json"  # Change this to your file path
     with open(file_path, "r") as file:
         data = json.load(file)
 
