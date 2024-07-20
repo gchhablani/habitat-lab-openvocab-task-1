@@ -287,7 +287,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                         proposition["args"][
                             f"entity_handles_{entity_index}_names_and_types"
                         ].append(
-                            (handle_to_object[entity_handle], "receptacle")
+                            (handle_to_recep[entity_handle], "receptacle")
                         )
                     else:
                         raise ValueError(
