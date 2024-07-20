@@ -144,9 +144,13 @@ class Scene:
                 return midpoint
 
             # Calculate control points for the Bézier curve
-            ctrl_x = (x0 + x1) / 2 + dy / 2
-            ctrl_y = min((y0 + y1) / 2 + abs(dx) / 2, height_upper)
-
+            if abs(dy) > abs(dx):
+                ctrl_x = (x0 + x1) / 2 + (-1 if np.sign(dx) == 0 else np.sign(dx)) * abs(dy) / 2
+                ctrl_y = min((y0 + y1) / 2, height_upper)
+            else:
+                ctrl_x = (x0 + x1) / 2 # + dy / 2
+                ctrl_y = min((y0 + y1) / 2 + abs(dx) / 2, height_upper)
+                
             # Define path for the curved arrow
             path_data = [
                 (Path.MOVETO, (x0, y0)),

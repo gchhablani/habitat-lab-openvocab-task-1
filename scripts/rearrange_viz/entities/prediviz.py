@@ -130,6 +130,7 @@ class PrediViz:
         # Plot the legend
         self.legends = []
         self.legend_bounds = []
+        same_or_diff_arg_indices = []
         if (
             all_is_next_tos or same_args_data or diff_args_data
         ):
@@ -151,6 +152,7 @@ class PrediViz:
                         self.scene.config.is_next_to, same_args_data, cropped_receptacle_icon_mapping
                     )
                 )
+                same_or_diff_arg_indices.append(len(self.legends) - 1)
                 self.legend_bounds.append((
                     height_lower, height_upper, 0
                 ))
@@ -160,21 +162,61 @@ class PrediViz:
                         self.scene.config.is_next_to, diff_args_data, cropped_receptacle_icon_mapping
                     )
                 )
+                same_or_diff_arg_indices.append(len(self.legends) - 1)
                 self.legend_bounds.append((
                     height_lower, height_upper, 0
                 ))
+
         range_to_num = {}
         range_to_current_height = {}
         range_to_consumed_space = {}
 
         # Precompute column assignments
         for legend, bound in zip(self.legends, self.legend_bounds):
-            if bound not in range_to_num:
-                range_to_num[bound] = 0
-                range_to_consumed_space[bound] = 0
-            range_to_num[bound] += 1
-            range_to_current_height[bound] = 0
-            range_to_consumed_space[bound] += legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+            if isinstance(legend, IsNextToLegend):
+                if bound not in range_to_num:
+                    range_to_num[bound] = 0
+                    range_to_consumed_space[bound] = 0
+                range_to_num[bound] += 1
+                range_to_current_height[bound] = 0
+                range_to_consumed_space[bound] += legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+
+        # Assign same to and diff to an empty bound to avoid overlap as much as possible.
+        if same_or_diff_arg_indices:
+            next_to_assign_idx = 0
+            
+            # First loop: assign to current bounds in prop_to_height_range
+            for current_level_idx, current_bound in prop_to_height_range.items():
+                if next_to_assign_idx >= len(same_or_diff_arg_indices):
+                    break
+                if current_bound not in range_to_num:
+                    legend_list_idx = same_or_diff_arg_indices[next_to_assign_idx]
+                    curr_legend = self.legends[legend_list_idx]
+                    self.legend_bounds[legend_list_idx] = current_bound
+                    range_to_num[current_bound] = 1
+                    range_to_current_height[current_bound] = 0
+                    range_to_consumed_space[current_bound] = (
+                        curr_legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+                    )
+                    next_to_assign_idx += 1
+            
+            # Second loop: handle remaining items in same_or_diff_arg_indices
+            while next_to_assign_idx < len(same_or_diff_arg_indices):
+                legend_list_idx = same_or_diff_arg_indices[next_to_assign_idx]
+                curr_legend = self.legends[legend_list_idx]
+                curr_bound = self.legend_bounds[legend_list_idx]
+                
+                if curr_bound not in range_to_num:
+                    range_to_num[curr_bound] = 0
+                    range_to_consumed_space[curr_bound] = 0
+                
+                range_to_num[curr_bound] += 1
+                range_to_current_height[curr_bound] = 0
+                range_to_consumed_space[curr_bound] += (
+                    curr_legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
+                )
+                next_to_assign_idx += 1
+
 
         # Compute necessary columns for each bound
         bounds_to_columns = {}

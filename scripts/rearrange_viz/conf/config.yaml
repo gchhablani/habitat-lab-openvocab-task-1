@@ -6,7 +6,7 @@ object:
   bottom_text_extra_margin: 50
   width: 100
   height: 100
-  text_size: 11
+  text_size: 13
   rounding_size: 10
   max_chars_per_line: 8
   on_floor_linewidth: 2
@@ -60,7 +60,7 @@ scene:
       bottom_text_extra_margin: 50
       width: 100
       height: 100
-      text_size: 11
+      text_size: 13
       rounding_size: 10
       max_chars_per_line: 9
     receptacle:
@@ -84,8 +84,8 @@ scene:
     label_fontsize: 12
   target_width: 6000
   temporal_scene_margin: 100
-  instruction_text_size: 20
+  instruction_text_size: 22
   per_instruction_line_height: 150
-  max_chars_per_line: 100
+  max_chars_per_line: 80
 
 width_inches: 20
