@@ -1,3 +1,4 @@
+from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import FancyArrow, PathPatch
@@ -498,10 +499,12 @@ class Scene:
                 room.in_proposition = False
         return mentioned_rooms
 
-    def update_rooms(self, current_propositions):
+    def update_rooms(self, propositions, constraints, global_to_local_idx):
         # print(self.object_to_recep)
+        current_propositions = deepcopy(propositions)
+        current_constraints = deepcopy(constraints)
         # Update the object_to_recep and object_to_room mappings
-        new_object_to_recep, new_object_to_room = update_object_recep_and_room(self.object_to_recep, self.object_to_room, current_propositions)
+        new_object_to_recep, new_object_to_room = update_object_recep_and_room(self.object_to_recep, self.object_to_room, current_propositions, current_constraints, global_to_local_idx)
         
         print(new_object_to_recep, new_object_to_room)
 
@@ -550,6 +553,7 @@ class Scene:
     def plot(
         self,
         propositions,
+        constraints,
         toposort,
         ax=None
     ):
@@ -568,6 +572,7 @@ class Scene:
                 current_propositions = [
                     propositions[idx] for idx in current_level
                 ]
+                global_to_local_idx = {global_idx: local_idx for local_idx, global_idx in enumerate(current_level)}
                 mentioned_rooms = self.extract_info_before_plot(current_propositions)
                 ax, height_lower, height_upper = (
                     self.plot_one_time_step(
@@ -593,7 +598,7 @@ class Scene:
                 min_lower = min(height_lower - self.config.temporal_scene_margin, min_lower)
                 
                 # Move around objects:
-                self.update_rooms(current_propositions)
+                self.update_rooms(current_propositions, constraints, global_to_local_idx)
 
                 # Reset room widths 
                 # TODO: Use a better logic to avoid recomputation of widths

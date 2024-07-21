@@ -120,6 +120,7 @@ class PrediViz:
         propositions = self.parse_propositions_and_set_instance_colors(propositions)
         fig, ax, height_lower, height_upper, prop_to_height_range = self.scene.plot(
             propositions,
+            constraints,
             toposort,
             ax
         )
