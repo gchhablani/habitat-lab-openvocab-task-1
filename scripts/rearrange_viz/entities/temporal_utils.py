@@ -1,5 +1,4 @@
 from collections import defaultdict
-import random
 
 def get_arg_name_from_arg_name(arg_name):
     if arg_name == 'room_ids':
@@ -22,7 +21,7 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
     # Track processed objects to handle fallback
     processed_objects = set()
     
-    # Process SameArgConstraints
+    # Process constraints
     if evaluation_constraints:
         for constraint in evaluation_constraints:
             if constraint["type"] == "SameArgConstraint":
@@ -30,7 +29,7 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
                 arg_names = constraint["args"]["arg_names"]
                 
                 # Collect common intersecting values
-                common_values = defaultdict(set)
+                common_values = set()
                 for idx, arg_name in zip(prop_indices, arg_names):
                     arg_name = get_arg_name_from_arg_name(arg_name)
                     if idx in global_to_local_idx:
@@ -38,17 +37,39 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
                         if curr_idx < len(evaluation_propositions):
                             prop = evaluation_propositions[curr_idx]
                             values = set(prop["args"][arg_name])
-                            if common_values[arg_name]:
-                                common_values[arg_name] &= values
+                            if common_values:
+                                common_values &= values
                             else:
-                                common_values[arg_name] = values
+                                common_values = values
                     
                 # Update propositions with intersecting values
                 for idx, arg_name in zip(prop_indices, arg_names):
                     if idx in global_to_local_idx:
                         curr_idx = global_to_local_idx[idx]
                         if curr_idx < len(evaluation_propositions):
-                            evaluation_propositions[curr_idx]["args"][arg_name] = list(common_values[arg_name])
+                            evaluation_propositions[curr_idx]["args"][arg_name] = list(common_values)
+            elif constraint["type"] == "DiffArgConstraint":
+                prop_indices = constraint["args"]["proposition_indices"]
+                arg_names = constraint["args"]["arg_names"]
+                
+                # Collect common intersecting values
+                common_values = set()
+                for idx, arg_name in zip(prop_indices, arg_names):
+                    arg_name = get_arg_name_from_arg_name(arg_name)
+                    if idx in global_to_local_idx:
+                        curr_idx = global_to_local_idx[idx]
+                        if curr_idx < len(evaluation_propositions):
+                            prop = evaluation_propositions[curr_idx]
+                            values = set(prop["args"][arg_name])
+                            common_values |= values
+                
+                # Remove intersecting values from propositions
+                for idx, arg_name in zip(prop_indices, arg_names):
+                    if idx in global_to_local_idx:
+                        curr_idx = global_to_local_idx[idx]
+                        if curr_idx < len(evaluation_propositions):
+                            prop_values = set(evaluation_propositions[curr_idx]["args"][arg_name])
+                            evaluation_propositions[curr_idx]["args"][arg_name] = list(prop_values - common_values)
 
     # Process each proposition
     for proposition in evaluation_propositions:
