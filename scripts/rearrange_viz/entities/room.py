@@ -67,25 +67,27 @@ class Room:
 
 
     def init_heights(self):
+        # print("#"*10)
+        # print(self.object_to_recep)
         # Init with min receptacle height
         self.room_height = (
             self.config.min_height
         )
+        for receptacle in self.receptacles:
+            receptacle.temp_mx_height = receptacle.height
+
         if self.objects:
-            # NOTE: Here we are assuming that all objects have some initial recep
-            # Might not work the best if this assumption is false
+
             for obj in self.objects:
                 if (
                     self.object_to_recep is not None
                     and obj.object_id in self.object_to_recep.keys()
                 ):  
+                    # print(obj.object_id)
                     receptacle_id = self.object_to_recep[obj.object_id]
                     current_receptacle = self.find_receptacle_by_id(
                         receptacle_id
                     )
-                    # Need to maintain temporary max height as we do not need absolute position
-                    if not hasattr(current_receptacle, 'temp_mx_height'): 
-                        current_receptacle.temp_mx_height = current_receptacle.height
                     current_receptacle.temp_mx_height += abs(obj.config.text_margin) + 2 * obj.config.height
                     # We take max of all top item positions for now
                     self.room_height = max(self.room_height, current_receptacle.temp_mx_height)
@@ -156,11 +158,10 @@ class Room:
                 ):
                     ax = obj.plot(
                         ax,
-                        position=(
+                        origin=(
                             offset,
                             actual_origin[1]
-                            + self.config.bottom_pad
-                            + self.height
+                            + self.room_height
                             * self.config.objects_height,
                         ),
                     )
@@ -170,6 +171,7 @@ class Room:
                     and obj.object_id in self.object_to_recep.keys()
                 ):
                     receptacle_id = self.object_to_recep[obj.object_id]
+                    # print(obj.object_id, self.room_id, receptacle_id, self.object_to_recep)
                     current_receptacle = self.find_receptacle_by_id(
                         receptacle_id
                     )

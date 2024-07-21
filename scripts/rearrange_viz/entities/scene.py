@@ -6,13 +6,16 @@ import random
 
 from .utils import sort_rooms, redistribute_target_width_to_rooms
 from .constants import BACKGROUND_COLOR
-
+from .temporal_utils import update_object_recep_and_room
 
 class Scene:
-    def __init__(self, config, rooms, instruction=""):
+    def __init__(self, config, rooms, instruction="", object_to_recep=None, object_to_room=None):
         self.config = config.scene
         self.instruction = instruction
         self.rooms = sort_rooms(rooms, instruction)
+        self.room_id_to_room = {room.room_id: room for room in self.rooms}
+        self.object_to_recep = object_to_recep
+        self.object_to_room = object_to_room
 
     def cleanup(self):
         if self.rooms:
@@ -376,6 +379,7 @@ class Scene:
 
         return ax, height_lower, height_upper
 
+
     def get_all_mentioned_rooms(self, propositions):
         # NOTE: All the next bits are only used to get a list of all the mentioned rooms to keep them in front!
         # We don't really care about using mentioned objects and receptacles after
@@ -493,7 +497,56 @@ class Scene:
             else:
                 room.in_proposition = False
         return mentioned_rooms
+
+    def update_rooms(self, current_propositions):
+        # print(self.object_to_recep)
+        # Update the object_to_recep and object_to_room mappings
+        new_object_to_recep, new_object_to_room = update_object_recep_and_room(self.object_to_recep, self.object_to_room, current_propositions)
         
+        print(new_object_to_recep, new_object_to_room)
+
+        # Handle objects with only new receptacle mappings but no new room mappings
+        for obj_name, new_recep in new_object_to_recep.items():
+            # Find the current room containing the object
+            for room in self.rooms:
+                obj = room.find_object_by_id(obj_name)
+                if obj:
+                    # Remove the object from the current room
+                    room.objects.remove(obj)
+                    break
+            
+            # Find the room containing the new receptacle
+            for room in self.rooms:
+                recep = room.find_receptacle_by_id(new_recep)
+                if recep:
+                    # Add the object to the room containing the new receptacle
+                    room.objects.append(obj)
+                    new_object_to_room[obj_name] = room.room_id
+                    break
+
+        # Move objects across rooms and update attributes
+        for obj_name, new_room_id in new_object_to_room.items():
+            new_room = self.room_id_to_room.get(new_room_id)
+            if new_room:
+                # Find the current room containing the object
+                for room in self.rooms:
+                    obj = room.find_object_by_id(obj_name)
+                    if obj:
+                        # Remove the object from the current room
+                        room.objects.remove(obj)
+                        break
+                
+                # Add the object to the new room
+                new_room.objects.append(obj)
+
+        # Update mapping for all rooms
+        for room in self.rooms:
+            room.object_to_recep = new_object_to_recep
+
+        # Update the mappings in the object
+        self.object_to_recep = new_object_to_recep
+        self.object_to_room = new_object_to_room
+
     def plot(
         self,
         propositions,
@@ -538,10 +591,14 @@ class Scene:
                     )
                 max_upper = max(height_upper, max_upper)
                 min_lower = min(height_lower - self.config.temporal_scene_margin, min_lower)
+                
+                # Move around objects:
+                self.update_rooms(current_propositions)
+
                 # Reset room widths 
                 # TODO: Use a better logic to avoid recomputation of widths
                 for room in self.rooms:
-                    room.init_widths()
+                    room.init_size()
             self.height = max_upper - min_lower
             return fig, ax, min_lower, max_upper, prop_to_height_range
         else:

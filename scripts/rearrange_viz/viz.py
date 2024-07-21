@@ -132,6 +132,7 @@ def plot_scene(
     instruction=None,
     save_path=None,
     object_to_recep=None,
+    object_to_room=None,
 ):
     """
     Plot entire scene.
@@ -168,6 +169,8 @@ def plot_scene(
         config,
         rooms,
         episode_data["instruction"] if instruction is None else instruction,
+        object_to_recep,
+        object_to_room,
     )
     prediviz = PrediViz(
         config,
@@ -617,6 +620,7 @@ def main():
                         save_directory, f"viz_{episode_id}.png"
                     ),
                     object_to_recep=episode_data["object_to_recep"],
+                    object_to_room=episode_data["object_to_room"],
                 )
 
             # Add run data for the current episode to the dictionary
