@@ -330,34 +330,42 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                         left_name = "receptacle_names"
                         right_name = "object_names"
 
-                    same_args.append(
-                        (
-                            [(item, left_name.split("_")[0]) for item in propositions[proposition_index]["args"][left_name]],
-                            [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
-                        )
-                    )
+                    same_args.append({
+                        'common_entities': [(item, left_name.split("_")[0]) for item in propositions[proposition_index]["args"][left_name]],
+                        'corresponding_entities': [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
+                        'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"]["object_names"]) else 'solid',
+                        'global_proposition_index': proposition_index,
+                        
+                    })
                 elif arg_name == "entity_handles_a" or arg_name == "entity_handles_b":
                     entity_index = arg_name.split('_')[-1]
                     opposite_entity_index = "b" if entity_index == "a" else "a"
                     same_args.append(
-                        (
-                            propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"],
-                            propositions[proposition_index]["args"][f"entity_handles_{opposite_entity_index}_names_and_types"],
-                        )
+                        {
+                            'common_entities': propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"],
+                            'corresponding_entities': propositions[proposition_index]["args"][f"entity_handles_{opposite_entity_index}_names_and_types"],
+                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"]["entity_handles_a"]) else 'solid',
+                            'global_proposition_index': proposition_index,
+                        }
                     )
                 elif arg_name == "room_ids":
                     right_name = "object_names"
                     same_args.append(
-                        (
-                            [(item, arg_name.split("_")[0]) for item in propositions[proposition_index]["args"][arg_name]],
-                            [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
-                        )
+                        {
+                            'common_entities': [(item, arg_name.split("_")[0]) for item in propositions[proposition_index]["args"][arg_name]],
+                            'corresponding_entities': [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
+                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"]["object_names"]) else 'solid',
+                            'global_proposition_index': proposition_index,
+                        }
                     )
                 else:
                     raise NotImplementedError(
                         f"Not implemented SameArg for arg name: {arg_name}"
                     )
-            constraint["same_args_data"] = same_args
+            constraint["same_args_data"] = {
+                "proposition_indices": constraint["args"]["proposition_indices"],
+                "data": same_args
+            }
         elif constraint["type"] == "DifferentArgConstraint":
             diff_args = []
             for proposition_index, arg_name in zip(constraint["args"]["proposition_indices"], constraint["args"]["arg_names"]):
@@ -375,33 +383,42 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                         right_name = "object_names"
 
                     diff_args.append(
-                        (
-                            [(item, left_name.split("_")[0]) for item in propositions[proposition_index]["args"][left_name]],
-                            [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
-                        )
+                        {
+                            'different_entities': [(item, left_name.split("_")[0]) for item in propositions[proposition_index]["args"][left_name]],
+                            'corresponding_entities': [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
+                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"]["object_names"]) else 'solid',
+                            'global_proposition_index': proposition_index,
+                        }
                     )
                 elif arg_name == "entity_handles_a" or arg_name == "entity_handles_b":
                     entity_index = arg_name.split('_')[-1]
                     opposite_entity_index = "b" if entity_index == "a" else "b"
                     diff_args.append(
-                        (
-                            propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"],
-                            propositions[proposition_index]["args"][f"entity_handles_{opposite_entity_index}_names_and_types"],
-                        )
+                        {
+                            'different_entities': propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"],
+                            'corresponding_entities': propositions[proposition_index]["args"][f"entity_handles_{opposite_entity_index}_names_and_types"],
+                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"]["object_names"]) else 'solid',
+                            'global_proposition_index': proposition_index,
+                        }
                     )
                 elif arg_name == "room_ids":
                     right_name = "object_names"
                     diff_args.append(
-                        (
-                            [(item, arg_name.split("_")[0]) for item in propositions[proposition_index]["args"][arg_name]],
-                            [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
-                        )
+                        {
+                            'different_entities': [(item, arg_name.split("_")[0]) for item in propositions[proposition_index]["args"][arg_name]],
+                            'corresponding_entities': [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
+                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"]["object_names"]) else 'solid',
+                            'global_proposition_index': proposition_index,
+                        }
                     )
                 else:
                     raise NotImplementedError(
                         f"Not implemented SameArg for arg name: {arg_name}"
                     )
-            constraint["diff_args_data"] = diff_args
+            constraint["diff_args_data"] = {
+                "proposition_indices": constraint["args"]["proposition_indices"],
+                "data": diff_args
+            }
         else:
             raise NotImplementedError(
                 f"Constraint type {constraint['type']} is not handled currently."

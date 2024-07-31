@@ -8,7 +8,7 @@ from ..receptacle import Receptacle
 from ..tiny_room import TinyRoom
 
 class DiffArgsLegend:
-    def __init__(self, config, diff_args, receptacle_icon_mapping):
+    def __init__(self, config, diff_args, propositions, receptacle_icon_mapping):
         self.title = "diff as"
         self.config = config
         # diff_args is a list of lists
@@ -17,6 +17,7 @@ class DiffArgsLegend:
         # the second item in each tuple is the thing to be on the other side
         # each item has its type described in the tuple
         self.diff_args = diff_args
+        self.propositions = propositions
         self.receptacle_icon_mapping = receptacle_icon_mapping
         self.set_graph_and_bipartite_sets()
         self.set_height()
@@ -41,26 +42,40 @@ class DiffArgsLegend:
         self.graphs = []
         self.left_sets = []
         self.right_sets = []
+        self.edge_styles = []
+        self.color_dicts = []
         for diff_args_data in self.diff_args:
             G = nx.Graph()
+            edge_style = {}
+            color_dict = {}
             left_elements = set()
             right_elements = set()
-            for tup in diff_args_data:
-                left_elements = left_elements.union(set(tup[0]))
-                right_elements = right_elements.union(set(tup[1]))
+            line_styles = []
+            colors = []
+            for item in diff_args_data:
+                left_elements = left_elements.union(set(item['different_entities']))
+                right_elements = right_elements + list(item['corresponding_entities'])
+                line_styles = line_styles + [item['line_style'] for i in item['corresponding_entities']]
+                colors = colors + [self.propositions[item['global_proposition_index']]['color'] for i in item['corresponding_entities']]
 
             left_elements = list(left_elements)
             right_elements = list(right_elements)
             for tup_idx, tup in enumerate(diff_args_data):   
                 left_element = left_elements[tup_idx]
                 right_element = right_elements[tup_idx]
+                right_idx = tup_idx
                 while left_element == right_element:
-                    right_element = right_elements[np.random.choice(len(right_elements))]
+                    right_idx = np.random.choice(len(right_elements))
+                    right_element = right_elements[right_idx]
                 if not G.has_node(left_element):
                     G.add_node(left_element[0], entity=left_element, bipartite=0)
                 if not G.has_node(right_element):
                     G.add_node(right_element[0], entity=right_element, bipartite=1)
                 G.add_edge(left_element[0], right_element[0])
+                edge_style[(left_element[0], right_element[0])] = line_styles[right_idx]
+                color_dict[(left_element[0], right_element[0])] = colors[right_idx]
+            self.edge_styles.append(edge_style)
+            self.color_dicts.append(color_dict)
             left_set = set()
             right_set = set()
             # Get the two sets of nodes
@@ -144,10 +159,11 @@ class DiffArgsLegend:
             current_height -= spacing
         return entities, current_height
 
-    def plot_lines(self, G, ax, left_entities, right_entities):
+    def plot_lines(self, G, ax, left_entities, right_entities, edge_style, color_dict):
         for edge in G.edges():
             node1, node2 = edge
-            line_style='solid'
+            line_style = edge_style[(node1, node2)]
+            color = color_dict[(node1, node2)]
             if node1 in left_entities:
                 first_entity = left_entities[node1]
             elif node1 in right_entities:
@@ -179,12 +195,12 @@ class DiffArgsLegend:
                 [first_center[1], second_center[1]],
                 linestyle=line_style,
                 linewidth=self.config.linewidth,
-                color="white",
+                color=color,
             )
 
             # Mark the end points of the lines with larger solid dots
             ax.scatter(first_center[0], first_center[1], color='white', s=self.config.endpoint_size, zorder=2)
-            ax.scatter(second_center[0], second_center[1], color='white', s=self.config.endpoint_size, zorder=2)
+            ax.scatter(second_center[0], second_center[1], color=color, s=self.config.endpoint_size, zorder=2)
 
     def plot(self, position=(0, 0), ax=None):
         # Plotting logic
@@ -243,10 +259,10 @@ class DiffArgsLegend:
             right_entities.append(new_right_entities)
 
         
-        for G, current_left_entities, current_right_entities in zip(
-            self.graphs, left_entities, right_entities
+        for G, current_left_entities, current_right_entities, edge_style, color_dict in zip(
+            self.graphs, left_entities, right_entities, self.edge_styles, self.color_dicts
         ):  
-            self.plot_lines(G, ax, current_left_entities, current_right_entities)
+            self.plot_lines(G, ax, current_left_entities, current_right_entities, edge_style, color_dict)
 
         # title 
         ax.text(

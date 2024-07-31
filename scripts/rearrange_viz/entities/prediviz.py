@@ -78,13 +78,16 @@ class PrediViz:
             color = list(color_palette.values())[
                 prop_idx % len(color_palette)
             ]
-            prop["color"] = color
-            if prop["function_name"] in ["is_on_top", "is_inside", "is_in_room", "is_on_floor"]:
-                object_names = prop["args"]["object_names"]
-                for object_name in object_names:
-                    if not InstanceColorMap.has_color(object_name):
-                        InstanceColorMap.set_color(object_name, color)
-            prop_idx += 1
+            if prop["function_name"] == "is_next_to":
+                prop["color"] = "white"
+            else:
+                prop["color"] = color
+                if prop["function_name"] in ["is_on_top", "is_inside", "is_in_room", "is_on_floor"]:
+                    object_names = prop["args"]["object_names"]
+                    for object_name in object_names:
+                        if not InstanceColorMap.has_color(object_name):
+                            InstanceColorMap.set_color(object_name, color)
+                prop_idx += 1
 
         for room in self.scene.rooms:
             for object in room.objects:
@@ -114,6 +117,7 @@ class PrediViz:
             if constraint["type"] == "TemporalConstraint":
                 toposort = constraint["toposort"]
             elif constraint["type"] == "SameArgConstraint":
+                # constraint['args']['proposition_indices']
                 same_args_data.append(constraint["same_args_data"])
             elif constraint["type"] == "DifferentArgConstraint":
                 diff_args_data.append(constraint["diff_args_data"])
@@ -131,7 +135,6 @@ class PrediViz:
         # Plot the legend
         self.legends = []
         self.legend_bounds = []
-        same_or_diff_arg_indices = []
         if (
             all_is_next_tos or same_args_data or diff_args_data
         ):
@@ -148,25 +151,37 @@ class PrediViz:
                             current_height_lower, current_height_upper, offset
                         ))
             if same_args_data:
-                self.legends.append(
-                    SameArgsLegend(
-                        self.scene.config.is_next_to, same_args_data, cropped_receptacle_icon_mapping
-                    )
-                )
-                same_or_diff_arg_indices.append(len(self.legends) - 1)
-                self.legend_bounds.append((
-                    height_lower, height_upper, 0
-                ))
+                for level_idx, level in enumerate(toposort):
+                    current_same_args_data = []
+                    for same_arg in same_args_data:
+                        if set(same_arg["proposition_indices"]).intersection(set(level)):
+                            current_same_args_data.append(same_arg["data"])
+                    if current_same_args_data:
+                        self.legends.append(
+                            SameArgsLegend(
+                                self.scene.config.is_next_to, current_same_args_data, propositions, cropped_receptacle_icon_mapping
+                            )
+                        )
+                        current_height_lower, current_height_upper, offset = prop_to_height_range[level_idx]
+                        self.legend_bounds.append((
+                            current_height_lower, current_height_upper, offset
+                        ))
             if diff_args_data:
-                self.legends.append(
-                    DiffArgsLegend(
-                        self.scene.config.is_next_to, diff_args_data, cropped_receptacle_icon_mapping
-                    )
-                )
-                same_or_diff_arg_indices.append(len(self.legends) - 1)
-                self.legend_bounds.append((
-                    height_lower, height_upper, 0
-                ))
+                for level_idx, level in enumerate(toposort):
+                    current_diff_args_data = []
+                    for diff_arg in diff_args_data:
+                        if set(diff_arg["proposition_indices"]).intersection(set(level)):
+                            current_diff_args_data.append(diff_arg["data"])
+                    if current_diff_args_data:
+                        self.legends.append(
+                            DiffArgsLegend(
+                                self.scene.config.is_next_to, current_diff_args_data, propositions, cropped_receptacle_icon_mapping
+                            )
+                        )
+                        current_height_lower, current_height_upper, offset = prop_to_height_range[level_idx]
+                        self.legend_bounds.append((
+                            current_height_lower, current_height_upper, offset
+                        ))
 
         range_to_num = {}
         range_to_current_height = {}
@@ -174,50 +189,12 @@ class PrediViz:
 
         # Precompute column assignments
         for legend, bound in zip(self.legends, self.legend_bounds):
-            if isinstance(legend, IsNextToLegend):
-                if bound not in range_to_num:
-                    range_to_num[bound] = 0
-                    range_to_consumed_space[bound] = 0
-                range_to_num[bound] += 1
-                range_to_current_height[bound] = 0
-                range_to_consumed_space[bound] += legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
-
-        # Assign same to and diff to an empty bound to avoid overlap as much as possible.
-        if same_or_diff_arg_indices:
-            next_to_assign_idx = 0
-            
-            # First loop: assign to current bounds in prop_to_height_range
-            for current_level_idx, current_bound in prop_to_height_range.items():
-                if next_to_assign_idx >= len(same_or_diff_arg_indices):
-                    break
-                if current_bound not in range_to_num:
-                    legend_list_idx = same_or_diff_arg_indices[next_to_assign_idx]
-                    curr_legend = self.legends[legend_list_idx]
-                    self.legend_bounds[legend_list_idx] = current_bound
-                    range_to_num[current_bound] = 1
-                    range_to_current_height[current_bound] = 0
-                    range_to_consumed_space[current_bound] = (
-                        curr_legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
-                    )
-                    next_to_assign_idx += 1
-            
-            # Second loop: handle remaining items in same_or_diff_arg_indices
-            while next_to_assign_idx < len(same_or_diff_arg_indices):
-                legend_list_idx = same_or_diff_arg_indices[next_to_assign_idx]
-                curr_legend = self.legends[legend_list_idx]
-                curr_bound = self.legend_bounds[legend_list_idx]
-                
-                if curr_bound not in range_to_num:
-                    range_to_num[curr_bound] = 0
-                    range_to_consumed_space[curr_bound] = 0
-                
-                range_to_num[curr_bound] += 1
-                range_to_current_height[curr_bound] = 0
-                range_to_consumed_space[curr_bound] += (
-                    curr_legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
-                )
-                next_to_assign_idx += 1
-
+            if bound not in range_to_num:
+                range_to_num[bound] = 0
+                range_to_consumed_space[bound] = 0
+            range_to_num[bound] += 1
+            range_to_current_height[bound] = 0
+            range_to_consumed_space[bound] += legend.height + self.scene.config.is_next_to.bottom_pad + self.scene.config.is_next_to.top_pad
 
         # Compute necessary columns for each bound
         bounds_to_columns = {}

@@ -7,7 +7,7 @@ from ..receptacle import Receptacle
 from ..tiny_room import TinyRoom
 
 class SameArgsLegend:
-    def __init__(self, config, same_args, receptacle_icon_mapping):
+    def __init__(self, config, same_args, propositions, receptacle_icon_mapping):
         self.title = "same as"
         self.config = config
         # same_args is a list of lists
@@ -16,6 +16,7 @@ class SameArgsLegend:
         # the second item in each tuple is the thing to be on the other side
         # each item has its type described in the tuple
         self.same_args = same_args
+        self.propositions = propositions
         self.receptacle_icon_mapping = receptacle_icon_mapping
         self.set_graph_and_bipartite_sets()
         self.set_height()
@@ -40,13 +41,21 @@ class SameArgsLegend:
         self.graphs = []
         self.left_sets = []
         self.right_sets = []
+        self.edge_styles = []
+        self.color_dicts = []
         for same_args_data in self.same_args:
             G = nx.Graph()
+            edge_style = {}
+            color_dict = {}
             left_elements = set()
-            right_elements = set()
-            for tup in same_args_data:
-                left_elements = left_elements.union(set(tup[0]))
-                right_elements = right_elements.union(set(tup[1]))
+            right_elements = []
+            line_styles = []
+            colors = []
+            for item in same_args_data:
+                left_elements = left_elements.union(set(item['common_entities']))
+                right_elements = right_elements + list(item['corresponding_entities'])
+                line_styles = line_styles + [item['line_style'] for i in item['corresponding_entities']]
+                colors = colors + [self.propositions[item['global_proposition_index']]['color'] for i in item['corresponding_entities']]
             left_elements = list(left_elements)
             right_elements = list(right_elements)
 
@@ -56,17 +65,20 @@ class SameArgsLegend:
             left_element = left_elements[0]
             if not G.has_node(left_element[0]):
                 G.add_node(left_element[0], entity=left_element, bipartite=0)
-            for item in right_elements:
+            for item, line_style, color in zip(right_elements, line_styles, colors):
                 node_label = item[0]
                 if not G.has_node(node_label):
                     G.add_node(node_label, entity=item, bipartite=1)
                 G.add_edge(left_element[0], node_label)
-
+                edge_style[(left_element[0], node_label)] = line_style
+                color_dict[(left_element[0], node_label)] = color
+            self.edge_styles.append(edge_style)
+            self.color_dicts.append(color_dict)
             left_set = set()
             right_set = set()
             # Get the two sets of nodes
             for idx, (label, data) in enumerate(G.nodes(data=True)):
-                if data["bipartite"] == 1:
+                if data["bipartite"] == 0:
                     left_set = left_set.union({label})
                 else:
                     right_set = right_set.union({label})
@@ -106,7 +118,7 @@ class SameArgsLegend:
         )
 
     def plot_entity_column(
-        self, ax, G, entity_set, midpoint, current_height, spacing
+        self, ax, G, entity_set, midpoint, current_height, spacing,
     ):
         entities = {}
         for idx, node in enumerate(entity_set):
@@ -144,10 +156,11 @@ class SameArgsLegend:
             current_height -= spacing
         return entities, current_height
 
-    def plot_lines(self, G, ax, left_entities, right_entities):
+    def plot_lines(self, G, ax, left_entities, right_entities, edge_style, color_dict):
         for edge in G.edges():
             node1, node2 = edge
-            line_style='solid'
+            line_style = edge_style[(node1, node2)]
+            color = color_dict[(node1, node2)]
             if node1 in left_entities:
                 first_entity = left_entities[node1]
             elif node1 in right_entities:
@@ -179,12 +192,12 @@ class SameArgsLegend:
                 [first_center[1], second_center[1]],
                 linestyle=line_style,
                 linewidth=self.config.linewidth,
-                color="white",
+                color=color,
             )
 
             # Mark the end points of the lines with larger solid dots
-            ax.scatter(first_center[0], first_center[1], color='white', s=self.config.endpoint_size, zorder=2)
-            ax.scatter(second_center[0], second_center[1], color='white', s=self.config.endpoint_size, zorder=2)
+            ax.scatter(first_center[0], first_center[1], color="white", s=self.config.endpoint_size, zorder=2)
+            ax.scatter(second_center[0], second_center[1], color=color, s=self.config.endpoint_size, zorder=2)
 
     def plot(self, position=(0, 0), ax=None):
         # Plotting logic
@@ -242,10 +255,10 @@ class SameArgsLegend:
             )
             right_entities.append(new_right_entities)
 
-        for G, current_left_entities, current_right_entities in zip(
-            self.graphs, left_entities, right_entities
+        for G, current_left_entities, current_right_entities, edge_style, color_dict in zip(
+            self.graphs, left_entities, right_entities, self.edge_styles, self.color_dicts
         ):  
-            self.plot_lines(G, ax, current_left_entities, current_right_entities)
+            self.plot_lines(G, ax, current_left_entities, current_right_entities, edge_style, color_dict)
 
         # title 
         ax.text(

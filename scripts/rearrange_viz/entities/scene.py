@@ -55,15 +55,10 @@ class Scene:
                                 arrow_dest_position = receptacle_obj.top_placeholder_position
                             
                             if len(object_names) > number:
-                                line_style = (
-                                    0,
-                                    (5, 10),
-                                )  # Dotted line for multiple objects
-                                label = str(number)
+                                line_style = 'dotted' # Dotted line for multiple objects
+                                label = str(number) if number > 1 else None
                             else:
-                                line_style = (
-                                    "-"  # Solid line for single object
-                                )
+                                line_style = "-"  # Solid line for single object
                                 label = None
                             self.add_arrow(
                                 ax,
@@ -96,11 +91,8 @@ class Scene:
             arrow_idx = 0
             for room_obj in target_rooms:
                 if len(object_names) > number:
-                    line_style = (
-                        0,
-                        (5, 10),
-                    )  # Dotted line for multiple objects
-                    label = str(number)
+                    line_style = 'dotted'  # Dotted line for multiple objects
+                    label = str(number) if number > 1 else None
                 else:
                     line_style = "-"  # Solid line for single object
                     label = None
@@ -209,7 +201,7 @@ class Scene:
                     mid_vert[0], mid_vert[1], label,
                     ha='center', va='center',
                     fontsize=self.config.arrow.label_fontsize,
-                    bbox=dict(boxstyle='round,pad=0.3', facecolor=color, edgecolor='white', linewidth=1)
+                    bbox=dict(boxstyle='circle,pad=0.3', facecolor=color, linewidth=0)
                 )
 
 
@@ -239,7 +231,7 @@ class Scene:
                     mid_x, mid_y, label,
                     ha='center', va='center',
                     fontsize=self.config.arrow.label_fontsize,
-                    bbox=dict(boxstyle='round,pad=0.3', facecolor=color, edgecolor='white', linewidth=1)
+                    bbox=dict(boxstyle='circle,pad=0.3', facecolor=color, linewidth=0)
                 )
 
     def plot_a_row_of_rooms(self, ax, current_rooms_to_plot, target_width, current_row_height):

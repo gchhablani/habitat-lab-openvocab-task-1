@@ -77,7 +77,7 @@ class Room:
             receptacle.temp_mx_height = receptacle.height
 
         if self.objects:
-
+            self.room_height *= 2
             for obj in self.objects:
                 if (
                     self.object_to_recep is not None
