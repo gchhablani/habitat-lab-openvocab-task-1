@@ -497,8 +497,6 @@ class Scene:
         current_constraints = deepcopy(constraints)
         # Update the object_to_recep and object_to_room mappings
         new_object_to_recep, new_object_to_room = update_object_recep_and_room(self.object_to_recep, self.object_to_room, current_propositions, current_constraints, global_to_local_idx)
-        
-        print(new_object_to_recep, new_object_to_room)
 
         # Handle objects with only new receptacle mappings but no new room mappings
         for obj_name, new_recep in new_object_to_recep.items():
