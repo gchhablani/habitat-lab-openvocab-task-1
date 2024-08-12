@@ -208,6 +208,20 @@ color_palette = {
     "Amethyst": "#9966CC"
 }
 
+object_states_colors = {
+    "is_clean": {
+        "false": "#A0522D",  # Sienna
+        "true": "#F5F5F5"    # WhiteSmoke
+    },
+    "is_filled": {
+        "false": "#B0C4DE",  # LightSteelBlue
+        "true": "#1E90FF"    # DodgerBlue
+    },
+    "is_powered_on": {
+        "false": "#DC143C",  # Crimson
+        "true": "#32CD32"    # LimeGreen
+    }
+}
 
 BACKGROUND_COLOR = "#3E4C60"
 LEGEND_BACKGROUND_COLOR = "#2D3541"

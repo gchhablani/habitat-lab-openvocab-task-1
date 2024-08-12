@@ -4,7 +4,7 @@ from PIL import Image
 
 from .constants import receptacle_color_map, receptacle_properties
 from .placeholder import Placeholder
-from .utils import add_tint_to_rgb
+from .utils import add_tint_to_rgb, resize_icon_height
 
 def calculate_placeholder_heights(image):
     # This method uses the alpha values to calculate center and top height of the icon
@@ -20,16 +20,6 @@ def calculate_placeholder_heights(image):
     top_height = bottom - top
     center_height = top_height / 2
     return center_height, top_height
-
-def resize_icon_height(icon, target_height):
-    width, height = icon.size
-    scaling_factor = target_height / height
-
-    # Resize the image
-    new_width = int(width * scaling_factor)
-    new_height = int(height * scaling_factor)
-    resized_icon = icon.resize((new_width, new_height))
-    return resized_icon
 
 
 class Receptacle:

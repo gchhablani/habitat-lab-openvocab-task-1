@@ -133,13 +133,20 @@ def plot_scene(
     save_path=None,
     object_to_recep=None,
     object_to_room=None,
+    object_to_states=None,
 ):
     """
     Plot entire scene.
     """
-    objects = [
-        Object(config, obj_id) for obj_id in episode_data["object_to_room"]
-    ]
+    objects = []
+    for obj_id in episode_data["object_to_room"]:
+        new_obj = Object(config, obj_id)
+        # Initial states
+        if object_to_states is not None and obj_id in object_to_states:
+            new_obj.states = object_to_states[obj_id]
+            new_obj.previous_states = object_to_states[obj_id]
+        objects.append(new_obj)
+
     rooms = []
     for room_id in episode_data["rooms"]:
         room_receptacles = []
@@ -233,7 +240,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
         )
     }
     run_data = load_run_data(args.run_json, episode_id, loaded_run_data)
-
+    assert run_data["info"]["task_gen"] == "object_states", "Not object state example"
     # Handle Propositions
     propositions = run_data["evaluation_propositions"]
     # all_functions = set(proposition["function_name"] for proposition in propositions)
@@ -245,6 +252,11 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
             "is_on_floor",
             "is_in_room",
             "is_next_to",
+            "is_filled",
+            "is_powered_on",
+            "is_powered_off",
+            "is_clean",
+            
         ]:
             raise NotImplementedError(
                 f'Not implemented for function_name {proposition["function_name"]}'
@@ -638,6 +650,7 @@ def main():
                     ),
                     object_to_recep=episode_data["object_to_recep"],
                     object_to_room=episode_data["object_to_room"],
+                    object_to_states=episode_data["object_to_states"],
                 )
 
             # Add run data for the current episode to the dictionary

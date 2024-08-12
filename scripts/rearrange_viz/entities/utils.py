@@ -116,3 +116,13 @@ def redistribute_target_width_to_rooms(rooms_to_plot, target_width):
     ]
 
     return redistributed_widths
+
+def resize_icon_height(icon, target_height):
+    width, height = icon.size
+    scaling_factor = target_height / height
+
+    # Resize the image
+    new_width = int(width * scaling_factor)
+    new_height = int(height * scaling_factor)
+    resized_icon = icon.resize((new_width, new_height))
+    return resized_icon

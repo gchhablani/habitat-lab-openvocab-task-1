@@ -313,7 +313,7 @@ class Scene:
         return ax, height_lower, height_upper
 
 
-    def plot_proposition_lines(self, ax, propositions, height_upper):
+    def plot_propositions(self, ax, propositions, height_upper):
         color_index = 0
         for proposition in propositions:
             function_name = proposition["function_name"]
@@ -349,7 +349,16 @@ class Scene:
                         color,
                         height_upper,
                     )
-
+                elif function_name in ["is_clean", "is_filled", "is_powered_on", "is_powered_off"]:
+                    object_names = args["object_names"]
+                    for object_name in object_names:
+                        for room in self.rooms:
+                            object_obj = room.find_object_by_id(object_name)
+                            if object_obj:
+                                if(function_name != "is_powered_off"):
+                                    object_obj.states[function_name] = True
+                                else:
+                                    object_obj.states["is_powered_on"] = False
 
     def plot_one_time_step(
         self,
@@ -368,7 +377,7 @@ class Scene:
             all_mentioned_rooms,
         )
 
-        self.plot_proposition_lines(ax, propositions, height_offset)
+        self.plot_propositions(ax, propositions, height_offset)
 
         return ax, height_lower, height_upper
 
@@ -399,6 +408,8 @@ class Scene:
                 mentioned_objs += prop["args"]["object_names"]
             elif prop["function_name"] == "is_next_to":
                 continue
+            elif prop["function_name"] in ["is_clean", "is_filled", "is_powered_on", "is_powered_off"]:
+                mentioned_objs += prop["args"]["object_names"]
             else:
                 raise NotImplementedError(
                     f"Not implemented for function with name: {prop['function_name']}."
