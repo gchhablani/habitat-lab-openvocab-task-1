@@ -9,7 +9,10 @@ def create_samples(json_file, output_dir, sample_set_size, num_directories, over
         data = json.load(f)
 
     episodes = data['episodes']
-    sample_set = random.sample(episodes, sample_set_size)
+    if(sample_set_size == -1):
+        sample_set = random.sample(episodes, len(episodes))
+    else:
+        sample_set = random.sample(episodes, sample_set_size)
     
     # Shuffle the episodes
     random.shuffle(sample_set)
@@ -108,9 +111,9 @@ def create_samples(json_file, output_dir, sample_set_size, num_directories, over
         
 
 if __name__ == "__main__":
-    json_file = "spatial_30_july12_200_run_data.json"
-    output_dir = "spatial_30_july12_200_2_splits"
-    sample_set_size = 198 # out of all, pick 1k
+    json_file = "temporal_test_samples_200_run_data.json"
+    output_dir = "temporal_test_samples_200_2_splits"
+    sample_set_size = -1  # out of all, pick 1k
     num_directories = 2 # make 3 sample directories
     overlap_samples = 0
     

@@ -240,7 +240,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
         )
     }
     run_data = load_run_data(args.run_json, episode_id, loaded_run_data)
-    assert run_data["info"]["task_gen"] == "object_states", "Not object state example"
+    # assert run_data["info"]["task_gen"] == "object_states", "Not object state example"
     # Handle Propositions
     propositions = run_data["evaluation_propositions"]
     # all_functions = set(proposition["function_name"] for proposition in propositions)
