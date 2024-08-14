@@ -1,70 +1,96 @@
-# Scene Visualization Tool
+# PrediViz
 
-## Overview
+## Steps for Annotation Tests
 
-This tool provides functionality to visualize scenes described in JSON format along with propositions describing relationships between objects, receptacles, and rooms. It utilizes Python with the following libraries:
-
-- Matplotlib: For plotting scenes and visualizations.
-- PIL (Python Imaging Library): For image processing.
-- OmegaConf: For managing configurations.
-- argparse: For parsing command-line arguments.
-
-## Usage
-
-### Setup
-
-1. Install the required Python packages using pip:
+1. Create the number of samples that you want from the dataset.
 
 ```sh
-pip install matplotlib pillow omegaconf
+python scripts/rearrange_viz/viz.py --run-json <path to the json file> --episode-data-dir <path to the directory containing episode metadata> --save-path <directory that stores the visualizations> --sample-size <sample size>
 ```
 
-2. Clone the repository:
+The above command will create the directory to store the visualizations, and a `<*>_run_data.json` for the run containing the mapping of the indexes to the episodes.
+
+2. Create samples for annotation:
+
+There is a script which can be run by `python scripts/rearrange_viz/create_samples.py`.
+In the script, before running, modify the details according to your requirements:
+
+```python
+    json_file = "temporal_test_samples_200_run_data.json" # the run data json file
+    output_dir = "temporal_test_samples_200_2_splits" # save directory from previous step
+    sample_set_size = -1  # out of all available, number of samples to pick. -1 picks everything
+    num_directories = 2 # number of sample directories to make
+    overlap_samples = 0 # how many samples should be common across the samples, useful for inter-annotator agreement
+```
+
+This will create different samples like so:
 
 ```sh
-git clone <repository_url>
+temporal_test_samples_200_2_splits/
+├── sample_0
+│   ├── README.md
+│   ├── assets
+│   │   ├── viz_0.png
+│   │   ├── viz_1.png
+│   │   └── viz_2.png
+│   ├── image.png
+│   ├── interface.html
+│   ├── receptacle_collage.png
+│   └── sample_episodes.json
+├── sample_1
+│   ├── README.md
+│   ├── assets
+│   │   ├── viz_0.png
+│   │   ├── viz_1.png
+│   │   └── viz_2.png
+│   ├── image.png
+│   ├── interface.html
+│   ├── receptacle_collage.png
+│   └── sample_episodes.json
 ```
 
-3. Download the `Inter` font through [Google Fonts](https://fonts.google.com/specimen/Inter?query=inter) and place it in `fonts`.
+3. After the annotations are done, each annotator should place all their annotations in a single folder. Then they should run the following script:
 
-### Running the tool
+```sh 
+python scripts/rearrange_viz/interface/merge_per_sample_annotations.py
+```
 
-You can run the tool using the following command:
+In this script, they must specify the following:
+```python
+# Specify the folder containing JSON files, the episodes file, and the output file
+folder_path = '~/Desktop/sample_0_all_annotations/' # The directory containing the annotations
+episodes_file = 'viz_rearrange_30k_1k_v3_5_splits/sample_0/sample_episodes.json'  # Update this path to your sample episodes JSON path
+output_file = 'merged_annotations.json' # DO NOT CHANGE THIS
+```
+
+4. After the above is done, the annotators should send the `merged_annotations.json` for collection. Please the respective JSON file in `*/sample_x/merged_annotations.json`. 
+
+Once collected, run the following scripts:
+
+- To calculate scores on individual `merged_annotations.json`:
+
+```sh 
+python scripts/rearrange_viz/interface/calculate_scores.py
+```
+
+Ensure that the path is correct:
+```python
+file_path = "spatial_30_july12_200_2_splits/sample_0/merged_annotations.json"  # Change this to your file path
+```
+
+5. Then create a combine annotation JSON file for all the samples using:
 ```sh
-python main.py --scene-json-path <path_to_scene_json> --propositions-path <path_to_propositions_json> [options]
+python scripts/rearrange_viz/annotation_scripts/combine_all_sample_annotations.py
+```
+Ensure that the base directory is correct:
+```python
+    base_directory = 'viz_rearrange_30k_1k_v3_5_splits'  # Assuming the script runs in the base directory containing subdirectories
 ```
 
-Replace `<path_to_scene_json>` with the path to the JSON file containing scene data, and `<path_to_propositions_json>` with the path to the JSON file containing propositions.
+6. Finally, compute different inter-annotator agreement scores using:
 
-### Command-line Options
-
-- `--object-id`: Specify the ID of a specific object to plot.
-- `--receptacle-id`: Specify the ID of a specific receptacle to plot.
-- `--room-id`: Specify the ID of a specific room to plot.
-- `--save-path`: Specify the path to save the generated figure.
-
-### Examples
-
-1. Plotting a specific object:
-
-```sh
-python main.py --scene-json-path scene.json --propositions-path propositions.json --object-id <object_id>
+```python 
+python scripts/rearrange_viz/annotation_scripts/compute_krippendorffs_alpha.py
 ```
 
-2. Plotting a specific receptacle:
-
-```sh
-python main.py --scene-json-path scene.json --propositions-path propositions.json --receptacle-id <receptacle_id>
-```
-
-3. Plotting a specific room:
-
-```sh
-python main.py --scene-json-path scene.json --propositions-path propositions.json --room-id <room_id>
-```
-
-4. Saving the generated figure:
-
-```sh
-python main.py --scene-json-path scene.json --propositions-path propositions.json --save-path output.png
-```
+**Note**: Step 5 and 6 only make sense when the common samples are greater than 0.

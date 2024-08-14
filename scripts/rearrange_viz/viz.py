@@ -10,14 +10,6 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 from entities import Object, Receptacle, Room, Scene, PrediViz
-from google_drive_utils import (
-    add_image_to_sheet,
-    create_drive_folder,
-    get_google_sheet,
-    load_credentials,
-    upload_image_to_drive,
-)
-from googleapiclient.discovery import build
 from omegaconf import OmegaConf
 from tqdm import tqdm
 
@@ -476,17 +468,6 @@ def parse_arguments():
         default="episode_",
     )
     parser.add_argument(
-        "--google-creds",
-        type=str,
-        help="Path to Google Drive credentials JSON file",
-    )
-    parser.add_argument(
-        "--google-sheets-name",
-        type=str,
-        help="Name of Google Sheets document",
-        default="Visualization-Rearrangement",
-    )
-    parser.add_argument(
         "--sample-size",
         type=int,
         help="If only a random subset of all the episodes is to be visualized, the sample size.",
@@ -658,39 +639,6 @@ def main():
                 save_directory, f"viz_{episode_id}.png"
             )
             run_data_dict["episodes"].append(run_data)
-
-            if args.google_creds:
-                # Load credentials for Drive
-                scopes = ["https://www.googleapis.com/auth/drive"]
-                drive_creds = load_credentials(args.google_creds, scopes)
-                drive_service = build("drive", "v3", credentials=drive_creds)
-                folder_id = create_drive_folder(
-                    drive_service, "Viz-Rearrangement"
-                )
-
-                # Upload image to Google Drive and get the file ID
-                image_path = os.path.join(
-                    save_directory, f"viz_{episode_id}.png"
-                )
-                image_id, image_url = upload_image_to_drive(
-                    drive_service, folder_id, image_path
-                )
-                drive_service.permissions().create(
-                    fileId=image_id, body={"role": "reader", "type": "anyone"}
-                ).execute()
-            if args.google_creds and args.google_sheets_name:
-                scopes = [
-                    "https://www.googleapis.com/auth/drive",
-                    "https://www.googleapis.com/auth/spreadsheets",
-                ]
-                creds = load_credentials(args.google_creds, scopes)
-                sheets_service = build("sheets", "v4", credentials=creds)
-                sheet_id = get_google_sheet(
-                    sheets_service, args.google_sheets_name, sheet_id
-                )
-                _ = add_image_to_sheet(
-                    sheets_service, sheet_id, episode_id, image_id
-                )
 
             # Save the run data dictionary to a JSON file
             with open(f"{save_directory}_run_data.json", "w") as f:
