@@ -100,3 +100,8 @@ data
 /sandbox
 /plots/outputs
 /wandb/
+
+receptacles
+habitat_scene_metadata
+propositions
+*.png
