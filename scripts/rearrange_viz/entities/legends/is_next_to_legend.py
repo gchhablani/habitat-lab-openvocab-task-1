@@ -35,14 +35,15 @@ class IsNextToLegend:
         self.left_sets = []
         self.right_sets = []
         self.edge_styles = []
+        G = nx.Graph()
+        left_set = set()
+        right_set = set()
+        edge_style = {}
         for is_next_to in self.is_next_tos:
-            G = nx.Graph()
-            edge_style = {}
             for entity_a in is_next_to[0]:
                 node_label_a = f"{entity_a[0]}"
                 if not G.has_node(node_label_a):
                     G.add_node(node_label_a, entity=entity_a, bipartite=0)
-
             for entity_b in is_next_to[1]:
                 node_label_b = f"{entity_b[0]}"
                 if not G.has_node(node_label_b):
@@ -58,17 +59,15 @@ class IsNextToLegend:
                     edge_style[(node_label_a, node_label_b)] = line_style
 
             # left_set, right_set = get_bipartite_sets(G)
-            left_set = set()
-            right_set = set()
             for idx, (label, data) in enumerate(G.nodes(data=True)):
                 if data["bipartite"] == 0:
                     left_set = left_set.union({label})
                 else:
                     right_set = right_set.union({label})
-            self.graphs.append(G)
-            self.edge_styles.append(edge_style)
-            self.left_sets.append(left_set)
-            self.right_sets.append(right_set)
+        self.graphs.append(G)
+        self.edge_styles.append(edge_style)
+        self.left_sets.append(left_set)
+        self.right_sets.append(right_set)
 
     def set_height(self):
         self.left_set_length = 0
