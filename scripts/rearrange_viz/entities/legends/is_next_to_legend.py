@@ -4,17 +4,6 @@ from ..object import Object
 from ..receptacle import Receptacle
 from ..constants import LEGEND_BACKGROUND_COLOR
 
-# Function to get bipartite sets from a graph with disconnected components
-def get_bipartite_sets(G):
-    left_set, right_set = set(), set()
-    for component in nx.connected_components(G):
-        subgraph = G.subgraph(component)
-        if nx.is_bipartite(subgraph):
-            left, right = nx.bipartite.sets(subgraph)
-            left_set.update(left)
-            right_set.update(right)
-    return left_set, right_set
-
 class IsNextToLegend:
     def __init__(self, config, is_next_tos, receptacle_icon_mapping):
         self.title = "next to"
@@ -52,12 +41,12 @@ class IsNextToLegend:
             for entity_a in is_next_to[0]:
                 node_label_a = f"{entity_a[0]}"
                 if not G.has_node(node_label_a):
-                    G.add_node(node_label_a, entity=entity_a)
+                    G.add_node(node_label_a, entity=entity_a, bipartite=0)
 
             for entity_b in is_next_to[1]:
                 node_label_b = f"{entity_b[0]}"
                 if not G.has_node(node_label_b):
-                    G.add_node(node_label_b, entity=entity_b)
+                    G.add_node(node_label_b, entity=entity_b, bipartite=1)
                 
                 # Determine the line style
                 line_style = 'dotted' if is_next_to[2] < len(is_next_to[0]) or is_next_to[2] < len(is_next_to[1]) else 'solid'
@@ -68,9 +57,14 @@ class IsNextToLegend:
                     G.add_edge(node_label_a, node_label_b)
                     edge_style[(node_label_a, node_label_b)] = line_style
 
-            # Check if the graph is bipartite
-            assert nx.is_bipartite(G), "The graph is not bipartite"
-            left_set, right_set = get_bipartite_sets(G)
+            # left_set, right_set = get_bipartite_sets(G)
+            left_set = set()
+            right_set = set()
+            for idx, (label, data) in enumerate(G.nodes(data=True)):
+                if data["bipartite"] == 0:
+                    left_set = left_set.union({label})
+                else:
+                    right_set = right_set.union({label})
             self.graphs.append(G)
             self.edge_styles.append(edge_style)
             self.left_sets.append(left_set)
