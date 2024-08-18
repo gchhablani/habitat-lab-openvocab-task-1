@@ -3,6 +3,7 @@ defaults:
 
 object:
   text_margin: -150
+  empty_state_linewidth: 3
   bottom_text_extra_margin: 50
   width: 100
   height: 100

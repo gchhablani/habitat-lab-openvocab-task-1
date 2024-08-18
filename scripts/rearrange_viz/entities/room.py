@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 from .placeholder import Placeholder
 from .utils import wrap_text
-
+from .constants import ROOM_COLOR
 
 class Room:
     def __init__(
@@ -289,7 +289,7 @@ class Room:
                     (actual_origin[0], actual_origin[1]),
                     self.room_width,
                     self.room_height,
-                    color="#5A6F8E",
+                    color=ROOM_COLOR,
                     alpha=self.config.box_alpha,
                 )
             )
@@ -305,7 +305,7 @@ class Room:
                     self.room_height - 2 * border_width,
                     edgecolor="white",
                     linewidth=border_width,
-                    facecolor="#5A6F8E",
+                    facecolor=ROOM_COLOR,
                     alpha=self.config.box_alpha,
                 )
             )

@@ -136,7 +136,7 @@ def plot_scene(
         # Initial states
         if object_to_states is not None and obj_id in object_to_states:
             new_obj.states = object_to_states[obj_id]
-            new_obj.previous_states = object_to_states[obj_id]
+            new_obj.previous_states = object_to_states[obj_id].copy()
         objects.append(new_obj)
 
     rooms = []
@@ -236,7 +236,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
     # Handle Propositions
     propositions = run_data["evaluation_propositions"]
     # all_functions = set(proposition["function_name"] for proposition in propositions)
-    # assert "is_on_floor" in all_functions, "is_on_floor not in episode data"
+    # assert "is_next_to" in all_functions, "is_next_to not in episode data"
     for proposition in propositions:
         if proposition["function_name"] not in [
             "is_on_top",
