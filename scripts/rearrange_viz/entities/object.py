@@ -1,7 +1,7 @@
 import os
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch, Arc, FancyArrowPatch
+from matplotlib.patches import FancyBboxPatch
 import numpy as np
 from PIL import Image
 
@@ -48,6 +48,12 @@ class Object:
         img_array = np.array(resized_img)
         self.powered_on_icon = img_array
 
+
+        img = Image.open("object_states/refresh.png").convert("RGBA")
+        resized_img = resize_icon_height(img, self.config.height)
+        img_array = np.array(resized_img)
+        self.refresh_icon = img_array
+
     def change_rectangle_color(self, color):
         self.object_rect.set_facecolor(color)
         InstanceColorMap.set_color(self.object_id, color)
@@ -80,6 +86,17 @@ class Object:
 
     def plot_state_attributes(self, ax, origin):
         if self.previous_states != self.states:
+            # show refresh icon inside the object rect
+            ax.imshow(
+                self.refresh_icon,
+                extent=[
+                    origin[0] + 0.2 * self.config.width,
+                    origin[0] + 0.8 * self.config.width,
+                    origin[1] + 0.2 * self.config.height,
+                    origin[1] + 0.8 * self.config.height,
+                ],
+                zorder=float('inf'),
+            )
             self.previous_states = self.states.copy()
 
         if 'is_clean' in self.states and not self.states['is_clean']:
@@ -168,6 +185,7 @@ class Object:
         color = get_object_color(self.object_id)
         self.dirty_icon[self.dirty_icon[:, :, 3] != 0, :3] = self.hex_to_rgb(color)
         self.powered_on_icon[self.powered_on_icon[:, :, 3] != 0, :3] = self.hex_to_rgb(color)
+        self.refresh_icon[self.refresh_icon[:, :, 3] != 0, :3] = self.hex_to_rgb("#FFFFFF")
         self.plot_state_attributes(ax, origin)
 
         if created_fig:
