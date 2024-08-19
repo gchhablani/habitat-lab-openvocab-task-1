@@ -50,7 +50,7 @@ class IsNextToLegend:
                     G.add_node(node_label_b, entity=entity_b, bipartite=1)
                 
                 # Determine the line style
-                line_style = 'dotted' if is_next_to[2] < len(is_next_to[0]) or is_next_to[2] < len(is_next_to[1]) else 'solid'
+                line_style = 'dotted' if is_next_to[2] < len(is_next_to[0]) else 'solid'
 
                 # Add edges between all pairs of nodes in entity_a and entity_b
                 for entity_a in is_next_to[0]:
