@@ -502,12 +502,12 @@ class Scene:
                 room.in_proposition = False
         return mentioned_rooms
 
-    def update_rooms(self, propositions, constraints, global_to_local_idx):
+    def update_rooms(self, current_propositions, evaluation_propositions, evaluation_constraints, global_to_local_idx):
         # print(self.object_to_recep)
-        current_propositions = deepcopy(propositions)
-        current_constraints = deepcopy(constraints)
+        current_propositions = deepcopy(current_propositions)
+        evaluation_constraints = deepcopy(evaluation_constraints)
         # Update the object_to_recep and object_to_room mappings
-        new_object_to_recep, new_object_to_room = update_object_recep_and_room(self.object_to_recep, self.object_to_room, current_propositions, current_constraints, global_to_local_idx)
+        new_object_to_recep, new_object_to_room = update_object_recep_and_room(self.object_to_recep, self.object_to_room, current_propositions, evaluation_propositions, evaluation_constraints, global_to_local_idx)
 
         # Handle objects with only new receptacle mappings but no new room mappings
         for obj_name, new_recep in new_object_to_recep.items():
@@ -599,7 +599,7 @@ class Scene:
                 min_lower = min(height_lower - self.config.temporal_scene_margin, min_lower)
                 
                 # Move around objects:
-                self.update_rooms(current_propositions, constraints, global_to_local_idx)
+                self.update_rooms(current_propositions, propositions, constraints, global_to_local_idx)
 
                 # Reset room widths 
                 # TODO: Use a better logic to avoid recomputation of widths

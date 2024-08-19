@@ -4,7 +4,7 @@ def get_arg_name_from_arg_name(arg_name):
     if arg_name == 'room_ids':
         arg_name = 'room_names'
     elif arg_name == 'object_handles':
-        arg_name = 'object_handles'
+        arg_name = 'object_names'
     elif arg_name == 'receptacle_handles':
         arg_name = 'receptacle_names'
     elif arg_name == 'entity_handles_a':
@@ -13,14 +13,53 @@ def get_arg_name_from_arg_name(arg_name):
         arg_name = 'entity_handles_b_names_and_types'
     return arg_name
 
-def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room, evaluation_propositions, evaluation_constraints=None, global_to_local_idx=None):
+def update_proposition_given_constraints(evaluation_constraints, evaluation_propositions, local_idx, entities, prop_arg_name, local_to_global_idx):
+    # NOTE: Currently this function only works for Objects and Entities, not Rooms and Receptacles!
+    if prop_arg_name == "entity_handles_a" or prop_arg_name == "entity_handles_b":
+        entities = [entity[0] for entity in entities]
+
+    for constraint in evaluation_constraints:
+        if constraint["type"] == "SameArgConstraint":
+            prop_indices = constraint["args"]["proposition_indices"]
+            arg_names = constraint["args"]["arg_names"]
+            if local_to_global_idx[local_idx] in prop_indices:
+                if arg_names[prop_indices.index(local_to_global_idx[local_idx])] == prop_arg_name:
+                    for idx, arg_name in zip(prop_indices, arg_names):
+                        current_arg_name = get_arg_name_from_arg_name(arg_name)
+                        if idx < len(evaluation_propositions):
+                            if current_arg_name == "entity_handles_a_names_and_types" or current_arg_name == "entity_handles_b_names_and_types":
+                                evaluation_propositions[idx]["args"][current_arg_name] = [(entity, 'object') for entity in entities]
+                            else:
+                                evaluation_propositions[idx]["args"][current_arg_name] = entities 
+                                
+
+        elif constraint["type"] == "DiffArgConstraint":
+            prop_indices = constraint["args"]["proposition_indices"]
+            arg_names = constraint["args"]["arg_names"]
+            if local_to_global_idx[local_idx] in prop_indices:
+                if arg_names[prop_indices.index(local_to_global_idx[local_idx])] == prop_arg_name:
+                    for idx, arg_name in zip(prop_indices, arg_names):
+                        if idx < len(evaluation_propositions):
+                            for entity in entities:
+                                current_arg_name = get_arg_name_from_arg_name(arg_name)
+                                if current_arg_name == "entity_handles_a_names_and_types" or current_arg_name == "entity_handles_b_names_and_types":
+                                    if (entity, 'object') in evaluation_propositions[idx]["args"][current_arg_name]:
+                                        evaluation_propositions[idx]["args"][current_arg_name].remove((entity, 'object'))
+
+                                else:
+                                    if entity in evaluation_propositions[idx]["args"][current_arg_name]:
+                                        evaluation_propositions[idx]["args"][current_arg_name].remove(entity)
+
+def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room, current_propositions, evaluation_propositions=None, evaluation_constraints=None, global_to_local_idx=None):
     # Initialize dictionaries to hold potential solutions
     potential_recep = defaultdict(set)
     potential_room = defaultdict(set)
     
     # Track processed objects to handle fallback
     processed_objects = set()
-    
+
+    local_to_global_idx = {v: k for k, v in global_to_local_idx.items()} if global_to_local_idx else None
+
     # Process constraints
     if evaluation_constraints:
         for constraint in evaluation_constraints:
@@ -32,22 +71,33 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
                 common_values = set()
                 for idx, arg_name in zip(prop_indices, arg_names):
                     arg_name = get_arg_name_from_arg_name(arg_name)
-                    if idx in global_to_local_idx:
-                        curr_idx = global_to_local_idx[idx]
-                        if curr_idx < len(evaluation_propositions):
-                            prop = evaluation_propositions[curr_idx]
-                            values = set(prop["args"][arg_name])
-                            if common_values:
-                                common_values &= values
-                            else:
-                                common_values = values
-                    
+                    # if idx in global_to_local_idx:
+                    #     curr_idx = global_to_local_idx[idx]
+                    #     if curr_idx < len(current_propositions):
+                    #         prop = current_propositions[curr_idx]
+                    #         values = set(prop["args"][arg_name])
+                    #         if common_values:
+                    #             common_values &= values
+                    #         else:
+                    #             common_values = values
+                    if idx < len(evaluation_propositions):
+                        prop = evaluation_propositions[idx]
+                        values = set(prop["args"][arg_name])
+                        if common_values:
+                            common_values &= values
+                        else:
+                            common_values = values
+
                 # Update propositions with intersecting values
+                # for idx, arg_name in zip(prop_indices, arg_names):
+                #     if idx in global_to_local_idx:
+                #         curr_idx = global_to_local_idx[idx]
+                #         if curr_idx < len(current_propositions):
+                #             current_propositions[curr_idx]["args"][arg_name] = list(common_values)
                 for idx, arg_name in zip(prop_indices, arg_names):
-                    if idx in global_to_local_idx:
-                        curr_idx = global_to_local_idx[idx]
-                        if curr_idx < len(evaluation_propositions):
-                            evaluation_propositions[curr_idx]["args"][arg_name] = list(common_values)
+                    if idx < len(evaluation_propositions):
+                        evaluation_propositions[idx]["args"][arg_name] = list(common_values)
+
             elif constraint["type"] == "DiffArgConstraint":
                 prop_indices = constraint["args"]["proposition_indices"]
                 arg_names = constraint["args"]["arg_names"]
@@ -56,29 +106,38 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
                 common_values = set()
                 for idx, arg_name in zip(prop_indices, arg_names):
                     arg_name = get_arg_name_from_arg_name(arg_name)
-                    if idx in global_to_local_idx:
-                        curr_idx = global_to_local_idx[idx]
-                        if curr_idx < len(evaluation_propositions):
-                            prop = evaluation_propositions[curr_idx]
-                            values = set(prop["args"][arg_name])
-                            common_values |= values
+                    # if idx in global_to_local_idx:
+                    #     curr_idx = global_to_local_idx[idx]
+                    #     if curr_idx < len(current_propositions):
+                    #         prop = current_propositions[curr_idx]
+                    #         values = set(prop["args"][arg_name])
+                    #         common_values |= values
+                    if idx < len(evaluation_propositions):
+                        prop = evaluation_propositions[idx]
+                        values = set(prop["args"][arg_name])
+                        common_values |= values
                 
                 # Remove intersecting values from propositions
+                # for idx, arg_name in zip(prop_indices, arg_names):
+                #     if idx in global_to_local_idx:
+                #         curr_idx = global_to_local_idx[idx]
+                #         if curr_idx < len(current_propositions):
+                #             prop_values = set(current_propositions[curr_idx]["args"][arg_name])
+                #             current_propositions[curr_idx]["args"][arg_name] = list(prop_values - common_values)
                 for idx, arg_name in zip(prop_indices, arg_names):
-                    if idx in global_to_local_idx:
-                        curr_idx = global_to_local_idx[idx]
-                        if curr_idx < len(evaluation_propositions):
-                            prop_values = set(evaluation_propositions[curr_idx]["args"][arg_name])
-                            evaluation_propositions[curr_idx]["args"][arg_name] = list(prop_values - common_values)
+                    if idx < len(evaluation_propositions):
+                        prop_values = set(evaluation_propositions[idx]["args"][arg_name])
+                        evaluation_propositions[idx]["args"][arg_name] = list(prop_values - common_values)
 
     # Process each proposition
-    for proposition in evaluation_propositions:
+    for local_idx, proposition in enumerate(current_propositions):
         func_name = proposition["function_name"]
         args = proposition["args"]
         
         if func_name == "is_inside":
             number = args["number"]
             objects = args["object_names"][:number]
+            update_proposition_given_constraints(evaluation_constraints, evaluation_propositions, local_idx, objects, "object_handles", local_to_global_idx)
             receptacles = args["receptacle_names"]
             
             for obj_name in objects:
@@ -89,6 +148,7 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
         elif func_name == "is_on_top":
             number = args["number"]
             objects = args["object_names"][:number]
+            update_proposition_given_constraints(evaluation_constraints, evaluation_propositions, local_idx, objects, "object_handles", local_to_global_idx)
             receptacles = args["receptacle_names"]
             
             for obj_name in objects:
@@ -99,6 +159,7 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
         elif func_name == "is_next_to":
             number = args["number"]
             entities_a = args["entity_handles_a_names_and_types"][:number]
+            update_proposition_given_constraints(evaluation_constraints, evaluation_propositions, local_idx, entities_a, "entity_handles_a", local_to_global_idx)
             entities_b = args["entity_handles_b_names_and_types"]
             
             for (obj_name_a, obj_type_a) in entities_a:
@@ -134,6 +195,7 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
         elif func_name == "is_in_room":
             number = args["number"]
             objects = args["object_names"][:number]
+            update_proposition_given_constraints(evaluation_constraints, evaluation_propositions, local_idx, objects, "object_handles", local_to_global_idx)
             rooms = args["room_names"]
             
             for obj_name in objects:
@@ -142,6 +204,7 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
                 processed_objects.add(obj_name)
         
         elif func_name == "is_on_floor":
+            # NOTE: Have not handles `number` here so far.
             objects = args["object_names"]
             for obj_name in objects:
                 potential_recep.pop(obj_name, None)
