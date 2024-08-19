@@ -71,15 +71,15 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
                 common_values = set()
                 for idx, arg_name in zip(prop_indices, arg_names):
                     arg_name = get_arg_name_from_arg_name(arg_name)
-                    # if idx in global_to_local_idx:
-                    #     curr_idx = global_to_local_idx[idx]
-                    #     if curr_idx < len(current_propositions):
-                    #         prop = current_propositions[curr_idx]
-                    #         values = set(prop["args"][arg_name])
-                    #         if common_values:
-                    #             common_values &= values
-                    #         else:
-                    #             common_values = values
+                    if idx in global_to_local_idx:
+                        curr_idx = global_to_local_idx[idx]
+                        if curr_idx < len(current_propositions):
+                            prop = current_propositions[curr_idx]
+                            values = set(prop["args"][arg_name])
+                            if common_values:
+                                common_values &= values
+                            else:
+                                common_values = values
                     if idx < len(evaluation_propositions):
                         prop = evaluation_propositions[idx]
                         values = set(prop["args"][arg_name])
@@ -89,11 +89,11 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
                             common_values = values
 
                 # Update propositions with intersecting values
-                # for idx, arg_name in zip(prop_indices, arg_names):
-                #     if idx in global_to_local_idx:
-                #         curr_idx = global_to_local_idx[idx]
-                #         if curr_idx < len(current_propositions):
-                #             current_propositions[curr_idx]["args"][arg_name] = list(common_values)
+                for idx, arg_name in zip(prop_indices, arg_names):
+                    if idx in global_to_local_idx:
+                        curr_idx = global_to_local_idx[idx]
+                        if curr_idx < len(current_propositions):
+                            current_propositions[curr_idx]["args"][arg_name] = list(common_values)
                 for idx, arg_name in zip(prop_indices, arg_names):
                     if idx < len(evaluation_propositions):
                         evaluation_propositions[idx]["args"][arg_name] = list(common_values)
@@ -106,24 +106,24 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
                 common_values = set()
                 for idx, arg_name in zip(prop_indices, arg_names):
                     arg_name = get_arg_name_from_arg_name(arg_name)
-                    # if idx in global_to_local_idx:
-                    #     curr_idx = global_to_local_idx[idx]
-                    #     if curr_idx < len(current_propositions):
-                    #         prop = current_propositions[curr_idx]
-                    #         values = set(prop["args"][arg_name])
-                    #         common_values |= values
+                    if idx in global_to_local_idx:
+                        curr_idx = global_to_local_idx[idx]
+                        if curr_idx < len(current_propositions):
+                            prop = current_propositions[curr_idx]
+                            values = set(prop["args"][arg_name])
+                            common_values |= values
                     if idx < len(evaluation_propositions):
                         prop = evaluation_propositions[idx]
                         values = set(prop["args"][arg_name])
                         common_values |= values
                 
                 # Remove intersecting values from propositions
-                # for idx, arg_name in zip(prop_indices, arg_names):
-                #     if idx in global_to_local_idx:
-                #         curr_idx = global_to_local_idx[idx]
-                #         if curr_idx < len(current_propositions):
-                #             prop_values = set(current_propositions[curr_idx]["args"][arg_name])
-                #             current_propositions[curr_idx]["args"][arg_name] = list(prop_values - common_values)
+                for idx, arg_name in zip(prop_indices, arg_names):
+                    if idx in global_to_local_idx:
+                        curr_idx = global_to_local_idx[idx]
+                        if curr_idx < len(current_propositions):
+                            prop_values = set(current_propositions[curr_idx]["args"][arg_name])
+                            current_propositions[curr_idx]["args"][arg_name] = list(prop_values - common_values)
                 for idx, arg_name in zip(prop_indices, arg_names):
                     if idx < len(evaluation_propositions):
                         prop_values = set(evaluation_propositions[idx]["args"][arg_name])
@@ -161,7 +161,9 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
             entities_a = args["entity_handles_a_names_and_types"][:number]
             update_proposition_given_constraints(evaluation_constraints, evaluation_propositions, local_idx, entities_a, "entity_handles_a", local_to_global_idx)
             entities_b = args["entity_handles_b_names_and_types"]
-            
+
+            # NOTE: Below logic has changed because next to, with different initial recepts, does not lead to a new receptacle.
+            # This may not work correctly everytime
             for (obj_name_a, obj_type_a) in entities_a:
                 if obj_type_a == "object":
                     for (obj_name_b, obj_type_b) in entities_b:
@@ -170,20 +172,22 @@ def update_object_recep_and_room(initial_object_to_recep, initial_object_to_room
                                 obj_name_a, set(
                                     [initial_object_to_recep.get(obj_name_a)] if obj_name_a in initial_object_to_recep else []
                                 )
-                            ) & potential_recep.get(
-                                obj_name_b, set(
-                                    [initial_object_to_recep.get(obj_name_b)] if obj_name_b in initial_object_to_recep else []
-                                )
-                            )
+                            ) 
+                            # & potential_recep.get(
+                            #     obj_name_b, set(
+                            #         [initial_object_to_recep.get(obj_name_b)] if obj_name_b in initial_object_to_recep else []
+                            #     )
+                            # )
                             intersect_room = potential_room.get(
                                 obj_name_a, set(
                                     [initial_object_to_room.get(obj_name_a)] if obj_name_a in initial_object_to_room else []
                                 )
-                            ) & potential_room.get(
-                                obj_name_b, set(
-                                    [initial_object_to_room.get(obj_name_b)] if obj_name_b in initial_object_to_room else []
-                                )
                             )
+                            # & potential_room.get(
+                            #     obj_name_b, set(
+                            #         [initial_object_to_room.get(obj_name_b)] if obj_name_b in initial_object_to_room else []
+                            #     )
+                            # )
                             if intersect_recep or intersect_room:
                                 potential_recep[obj_name_a] = intersect_recep
                                 potential_recep[obj_name_b] = intersect_recep
