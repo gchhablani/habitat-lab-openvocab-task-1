@@ -314,19 +314,12 @@ class Scene:
 
 
     def plot_propositions(self, ax, propositions, height_upper):
-        color_index = 0
         for proposition in propositions:
             function_name = proposition["function_name"]
             args = proposition["args"]
             if "object_names" in args:
                 object_names = args["object_names"]
                 number = args["number"]
-
-                # # Cycle through the color palette for each proposition
-                # color = list(color_palette.values())[
-                #     color_index % len(color_palette)
-                # ]
-                # color_index += 1
                 color = proposition["color"]
                 if function_name in ["is_inside", "is_on_top"]:
                     receptacle_names = args["receptacle_names"]
@@ -360,11 +353,36 @@ class Scene:
                                 else:
                                     object_obj.states["is_powered_on"] = False
 
+    def plot_time_step_box(self, ax, step_idx, height_upper):
+        # plot a small square on top right corner to indicate the time step
+        # TODO: Remove the hardcoded values for the square and text
+        ax.add_patch(
+            plt.Rectangle(
+                (self.width - 120, height_upper - 120),
+                110,
+                110,
+                facecolor="white",
+                edgecolor="black",
+                linewidth=0,
+            )
+        )
+        ax.text(
+            self.width - 70,
+            height_upper - 70,
+            f"{step_idx}",
+            fontsize=12,
+            verticalalignment="center",
+            horizontalalignment="center",
+            color="black",
+        )
+
     def plot_one_time_step(
         self,
         ax,
         propositions,
         mentioned_rooms,
+        single_image=True,
+        step_idx=0,
         height_offset=0,
         all_mentioned_rooms=None,
     ):
@@ -376,9 +394,13 @@ class Scene:
             height_offset,
             all_mentioned_rooms,
         )
-
+        
         self.plot_propositions(ax, propositions, height_offset)
-
+        if not single_image:
+            # Currently, support is only for non-single image because height_upper is always 0
+            # For single image, we need some added logic to get correct upper height
+            self.plot_time_step_box(ax, step_idx, height_upper)
+        
         return ax, height_lower, height_upper
 
 
@@ -503,7 +525,6 @@ class Scene:
         return mentioned_rooms
 
     def update_rooms(self, current_propositions, evaluation_propositions, evaluation_constraints, global_to_local_idx):
-        # print(self.object_to_recep)
         current_propositions = deepcopy(current_propositions)
         evaluation_constraints = deepcopy(evaluation_constraints)
         # Update the object_to_recep and object_to_room mappings
@@ -556,57 +577,101 @@ class Scene:
         propositions,
         constraints,
         toposort,
-        ax=None
+        ax=None,
+        single_image=True,
     ):
-        if ax is None:
-            fig, ax = plt.subplots()
-            fig.patch.set_facecolor(BACKGROUND_COLOR)
-        else:
-            fig = plt.gcf()
+        if single_image:
+            if ax is None:
+                fig, ax = plt.subplots()
+                fig.patch.set_facecolor(BACKGROUND_COLOR)
+            else:
+                fig = plt.gcf()
 
         prop_to_height_range = {}
         if toposort:
-            all_mentioned_rooms = self.get_all_mentioned_rooms(propositions)
-            max_upper = 0
-            min_lower = 0
-            for level_idx, current_level in enumerate(toposort):
-                current_propositions = [
-                    propositions[idx] for idx in current_level
-                ]
-                global_to_local_idx = {global_idx: local_idx for local_idx, global_idx in enumerate(current_level)}
-                mentioned_rooms = self.extract_info_before_plot(current_propositions)
-                ax, height_lower, height_upper = (
-                    self.plot_one_time_step(
-                        ax,
-                        current_propositions,
-                        mentioned_rooms,
-                        height_offset=min_lower,
-                        all_mentioned_rooms=all_mentioned_rooms,
+            if single_image:
+                all_mentioned_rooms = self.get_all_mentioned_rooms(propositions)
+                max_upper = 0
+                min_lower = 0
+                for level_idx, current_level in enumerate(toposort):
+                    current_propositions = [
+                        propositions[idx] for idx in current_level
+                    ]
+                    global_to_local_idx = {global_idx: local_idx for local_idx, global_idx in enumerate(current_level)}
+                    mentioned_rooms = self.extract_info_before_plot(current_propositions)
+                    ax, height_lower, height_upper = (
+                        self.plot_one_time_step(
+                            ax,
+                            current_propositions,
+                            mentioned_rooms,
+                            step_idx=level_idx,
+                            single_image=single_image,
+                            height_offset=min_lower,
+                            all_mentioned_rooms=all_mentioned_rooms,
+                        )
                     )
-                )
-                prop_to_height_range[level_idx] = (height_lower, min_lower, max_upper - min_lower)
-                if level_idx != len(toposort) - 1:
-                    # Plot horizontal line
-                    ax.hlines(
-                        xmin=0, 
-                        xmax=self.width,
-                        y=height_lower - self.config.temporal_scene_margin / 2,
-                        color="white",
-                        linewidth=4,
-                        linestyle="-",
-                    )
-                max_upper = max(height_upper, max_upper)
-                min_lower = min(height_lower - self.config.temporal_scene_margin, min_lower)
-                
-                # Move around objects:
-                self.update_rooms(current_propositions, propositions, constraints, global_to_local_idx)
+                    prop_to_height_range[level_idx] = (height_lower, min_lower, max_upper - min_lower)
+                    if level_idx != len(toposort) - 1:
+                        # Plot horizontal line
+                        ax.hlines(
+                            xmin=0, 
+                            xmax=self.width,
+                            y=height_lower - self.config.temporal_scene_margin / 2,
+                            color="white",
+                            linewidth=4,
+                            linestyle="-",
+                        )
+                    max_upper = max(height_upper, max_upper)
+                    min_lower = min(height_lower - self.config.temporal_scene_margin, min_lower)
+                    
+                    # Move around objects:
+                    self.update_rooms(current_propositions, propositions, constraints, global_to_local_idx)
 
-                # Reset room widths 
-                # TODO: Use a better logic to avoid recomputation of widths
-                for room in self.rooms:
-                    room.init_size()
-            self.height = max_upper - min_lower
-            return fig, ax, min_lower, max_upper, prop_to_height_range
+                    # Reset room widths 
+                    # TODO: Use a better logic to avoid recomputation of widths
+                    for room in self.rooms:
+                        room.init_size()
+                self.height = max_upper - min_lower
+                return fig, ax, min_lower, max_upper, prop_to_height_range
+            else:
+                all_mentioned_rooms = self.get_all_mentioned_rooms(propositions)
+                fig_data = []
+                for level_idx, current_level in enumerate(toposort):
+                    # We create a new figure every time
+                    max_upper = 0
+                    min_lower = 0
+                    fig, ax = plt.subplots()
+                    fig.patch.set_facecolor(BACKGROUND_COLOR)
+                    current_propositions = [
+                        propositions[idx] for idx in current_level
+                    ]
+                    global_to_local_idx = {global_idx: local_idx for local_idx, global_idx in enumerate(current_level)}
+                    mentioned_rooms = self.extract_info_before_plot(current_propositions)
+                    ax, height_lower, height_upper = (
+                        self.plot_one_time_step(
+                            ax,
+                            current_propositions,
+                            mentioned_rooms,
+                            step_idx=level_idx,
+                            single_image=single_image,
+                            height_offset=min_lower,
+                            all_mentioned_rooms=all_mentioned_rooms,
+                        )
+                    )
+                    prop_to_height_range[level_idx] = (height_lower, min_lower, max_upper - min_lower)
+                    max_upper = max(height_upper, max_upper)
+                    min_lower = min(height_lower, min_lower)
+                    
+                    # Move around objects:
+                    self.update_rooms(current_propositions, propositions, constraints, global_to_local_idx)
+
+                    # Reset room widths 
+                    # TODO: Use a better logic to avoid recomputation of widths
+                    for room in self.rooms:
+                        room.init_size()
+                    fig_data.append((fig, ax, min_lower, max_upper, prop_to_height_range))
+                self.height = max_upper - min_lower # Does not matter
+                return fig_data
         else:
             mentioned_rooms = self.extract_info_before_plot(propositions)
             ax, height_lower, height_upper = (

@@ -100,56 +100,36 @@ class PrediViz:
 
         return propositions
 
-    def plot(self,
-        propositions,
-        constraints,
-        receptacle_icon_mapping,
-        cropped_receptacle_icon_mapping,
-        show_instruction=True,
-        ):
-        fig, ax = plt.subplots()
-        fig.patch.set_facecolor(BACKGROUND_COLOR)
-
-        toposort = []
-        same_args_data = []
-        diff_args_data = []
-        for constraint in constraints:
-            if constraint["type"] == "TemporalConstraint":
-                toposort = constraint["toposort"]
-            elif constraint["type"] == "SameArgConstraint":
-                # constraint['args']['proposition_indices']
-                same_args_data.append(constraint["same_args_data"])
-            elif constraint["type"] == "DifferentArgConstraint":
-                diff_args_data.append(constraint["diff_args_data"])
-        propositions = self.parse_propositions_and_set_instance_colors(propositions)
-        fig, ax, height_lower, height_upper, prop_to_height_range = self.scene.plot(
-            propositions,
-            constraints,
-            toposort,
-            ax
-        )
+    def _insert_new_legend(self, new_legend, fig_data, single_image, level_idx):
+        self.legends.append(new_legend)
+        key = 0 if single_image else level_idx
+        if key not in self.fig_data_idx_to_legend_idxs:
+            self.fig_data_idx_to_legend_idxs[key] = []
+        self.fig_data_idx_to_legend_idxs[key].append(len(self.legends) - 1)
+        prop_to_height_range = fig_data[key][4]
+        current_height_lower, current_height_upper, offset = prop_to_height_range[level_idx]
+        self.legend_bounds.append((
+            current_height_lower, current_height_upper, offset
+        ))
         
+    def _create_legend_data(self, propositions, toposort, same_args_data, diff_args_data, cropped_receptacle_icon_mapping, single_image, fig_data):
         all_is_next_tos = self.get_is_next_tos(
             propositions, toposort
         )
-        # Plot the legend
         self.legends = []
         self.legend_bounds = []
+        self.fig_data_idx_to_legend_idxs = {}
         if (
             all_is_next_tos or same_args_data or diff_args_data
         ):
             if all_is_next_tos:
                 for level_idx, is_next_tos in enumerate(all_is_next_tos):
                     if is_next_tos:
-                        self.legends.append(
-                            IsNextToLegend(
-                                self.scene.config.is_next_to, is_next_tos, cropped_receptacle_icon_mapping
-                            )
+                        new_legend = IsNextToLegend(
+                            self.scene.config.is_next_to, is_next_tos, cropped_receptacle_icon_mapping
                         )
-                        current_height_lower, current_height_upper, offset = prop_to_height_range[level_idx]
-                        self.legend_bounds.append((
-                            current_height_lower, current_height_upper, offset
-                        ))
+                        self._insert_new_legend(new_legend, fig_data, single_image, level_idx)
+                        
             if same_args_data:
                 for level_idx, level in enumerate(toposort):
                     current_same_args_data = []
@@ -157,15 +137,10 @@ class PrediViz:
                         if set(same_arg["proposition_indices"]).intersection(set(level)):
                             current_same_args_data.append(same_arg["data"])
                     if current_same_args_data:
-                        self.legends.append(
-                            SameArgsLegend(
-                                self.scene.config.is_next_to, current_same_args_data, propositions, cropped_receptacle_icon_mapping
-                            )
+                        new_legend = SameArgsLegend(
+                            self.scene.config.is_next_to, current_same_args_data, propositions, cropped_receptacle_icon_mapping
                         )
-                        current_height_lower, current_height_upper, offset = prop_to_height_range[level_idx]
-                        self.legend_bounds.append((
-                            current_height_lower, current_height_upper, offset
-                        ))
+                        self._insert_new_legend(new_legend, fig_data, single_image, level_idx)
             if diff_args_data:
                 for level_idx, level in enumerate(toposort):
                     current_diff_args_data = []
@@ -173,22 +148,19 @@ class PrediViz:
                         if set(diff_arg["proposition_indices"]).intersection(set(level)):
                             current_diff_args_data.append(diff_arg["data"])
                     if current_diff_args_data:
-                        self.legends.append(
-                            DiffArgsLegend(
-                                self.scene.config.is_next_to, current_diff_args_data, propositions, cropped_receptacle_icon_mapping
-                            )
+                        new_legend = DiffArgsLegend(
+                            self.scene.config.is_next_to, current_diff_args_data, propositions, cropped_receptacle_icon_mapping
                         )
-                        current_height_lower, current_height_upper, offset = prop_to_height_range[level_idx]
-                        self.legend_bounds.append((
-                            current_height_lower, current_height_upper, offset
-                        ))
+                        self._insert_new_legend(new_legend, fig_data, single_image, level_idx)
 
+
+    def _plot_legends(self, ax, height_lower, height_upper, legends, legend_bounds):
         range_to_num = {}
         range_to_current_height = {}
         range_to_consumed_space = {}
 
         # Precompute column assignments
-        for legend, bound in zip(self.legends, self.legend_bounds):
+        for legend, bound in zip(legends, legend_bounds):
             if bound not in range_to_num:
                 range_to_num[bound] = 0
                 range_to_consumed_space[bound] = 0
@@ -214,7 +186,7 @@ class PrediViz:
         column_legend_lists = {bound: [[] for _ in range(bounds_to_columns[bound])] for bound in bounds_to_columns.keys()}
         column_heights = {bound: [0] * bounds_to_columns[bound] for bound in bounds_to_columns.keys()}
 
-        for legend, bound in zip(self.legends, self.legend_bounds):
+        for legend, bound in zip(legends, legend_bounds):
             num_columns = bounds_to_columns[bound]
             min_height_column = min(range(num_columns), key=lambda col: column_heights[bound][col])
             column_legend_lists[bound][min_height_column].append(legend)
@@ -254,27 +226,81 @@ class PrediViz:
                     legend.plot((legend_left, legend_origin), ax)
                     mx_width = max(mx_width, legend_left + legend.width + legend.horizontal_margin)
                     current_height += legend_space + column_spacing
+        return mx_width, max_column_upper, min_column_lower
 
-        
-        if hasattr(self, "legends"):
-            final_width = mx_width
-            final_upper = max_column_upper
-            final_lower = min_column_lower
-        else:
-            final_width = self.scene.width
-            final_upper = height_upper
-            final_lower = height_lower
+    def plot(self,
+        propositions,
+        constraints,
+        receptacle_icon_mapping,
+        cropped_receptacle_icon_mapping,
+        show_instruction=True,
+        single_image=True,
+    ):
+        if single_image:
+            # If we are using single image, then we pass the ax to the function
+            # Otherwise, the scene plotting method will return the figs and axs
+            fig, ax = plt.subplots()
+            fig.patch.set_facecolor(BACKGROUND_COLOR)
 
-        # Add instruction on top
-        if show_instruction:
-            self.compute_extra_height()
-            final_upper += self.extra_instruction_height
-            wrapped_text = self.plot_instruction(
-                ax, self.scene.width, mx_width, final_lower, final_upper
+        toposort = []
+        same_args_data = []
+        diff_args_data = []
+        for constraint in constraints:
+            if constraint["type"] == "TemporalConstraint":
+                toposort = constraint["toposort"]
+            elif constraint["type"] == "SameArgConstraint":
+                # constraint['args']['proposition_indices']
+                same_args_data.append(constraint["same_args_data"])
+            elif constraint["type"] == "DifferentArgConstraint":
+                diff_args_data.append(constraint["diff_args_data"])
+        propositions = self.parse_propositions_and_set_instance_colors(propositions)
+        if single_image:
+            fig, ax, height_lower, height_upper, prop_to_height_range = self.scene.plot(
+                propositions,
+                constraints,
+                toposort,
+                ax,
+                single_image=single_image,
             )
-        ax.set_xlim(0, final_width)
-        ax.set_ylim(final_lower, final_upper)
-        ax.axis('off')
+            fig_data = [(fig, ax, height_lower, height_upper, prop_to_height_range)]
+        else:
+            fig_data = self.scene.plot(
+                propositions,
+                constraints,
+                toposort,
+                single_image=single_image,
+            )
 
-        return fig, ax, final_upper - final_lower, final_width
+        # Create legends data
+        self._create_legend_data(propositions, toposort, same_args_data, diff_args_data, cropped_receptacle_icon_mapping, single_image, fig_data)
+        print(self.fig_data_idx_to_legend_idxs, self.legends)
+        result_fig_data = []
+        for fig_data_idx, (fig, ax, height_lower, height_upper, prop_to_height_range) in enumerate(fig_data):
+            if self.legends:
+                current_legends = [self.legends[idx] for idx in self.fig_data_idx_to_legend_idxs[fig_data_idx]]
+                current_legend_bounds = [self.legend_bounds[idx] for idx in self.fig_data_idx_to_legend_idxs[fig_data_idx]]
+                # Plot legends
+                mx_width, max_column_upper, min_column_lower = self._plot_legends(ax, height_lower, height_upper, current_legends, current_legend_bounds)
+                
+                # Set final width and height
+                final_width = mx_width
+                final_upper = max_column_upper
+                final_lower = min_column_lower
+            else:
+                final_width = self.scene.width
+                final_upper = height_upper
+                final_lower = height_lower
+            # Add instruction on top
+            if show_instruction:
+                print("Here")
+                self.compute_extra_height()
+                final_upper += self.extra_instruction_height
+                wrapped_text = self.plot_instruction(
+                    ax, self.scene.width, final_width, final_lower, final_upper
+                )
+            ax.set_xlim(0, final_width)
+            ax.set_ylim(final_lower, final_upper)
+            ax.axis('off')
+            result_fig_data.append((fig, ax, final_upper - final_lower, final_width))
+        return result_fig_data
         

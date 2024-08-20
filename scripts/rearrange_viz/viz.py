@@ -121,6 +121,7 @@ def plot_scene(
     constraints,
     receptacle_icon_mapping,
     cropped_receptacle_icon_mapping,
+    single_image=True,
     instruction=None,
     save_path=None,
     object_to_recep=None,
@@ -175,24 +176,32 @@ def plot_scene(
         config,
         scene
     )
-    fig, ax, final_height, final_width = prediviz.plot(
+    result_fig_data = prediviz.plot(
         propositions,
         constraints,
         receptacle_icon_mapping,
         cropped_receptacle_icon_mapping,
+        single_image=single_image,
     )
-    width_inches = config.width_inches
-    fig.set_size_inches(
-        width_inches, (final_height / final_width) * width_inches
-    )
+    for step_idx, (fig, ax, final_height, final_width) in enumerate(result_fig_data):
+        width_inches = config.width_inches
+        fig.set_size_inches(
+            width_inches, (final_height / final_width) * width_inches
+        )
 
-    plt.subplots_adjust(right=0.98, left=0.02, bottom=0.02, top=0.95)
-
-    if save_path:
-        plt.savefig(save_path, dpi=400)
-    else:
-        plt.show()
-    fig.clear()
+        # Adjust only the current subplot
+        plt.sca(ax)
+        plt.subplots_adjust(right=0.98, left=0.02, bottom=0.02, top=0.95)
+        if save_path:
+            # Save each step as a separate image
+            if not os.path.exists(save_path):
+                os.makedirs(save_path, exist_ok=True)
+            fig.savefig(
+                os.path.join(save_path, f"step_{step_idx}.png"), dpi=400
+            )
+        else:
+            fig.show()
+        fig.clear()
     plt.close()
     scene.cleanup()
     del scene
@@ -472,6 +481,11 @@ def parse_arguments():
         type=int,
         help="If only a random subset of all the episodes is to be visualized, the sample size.",
     )
+    parser.add_argument(
+        "--single-image",
+        action="store_true",
+        help="If True, save the entire scene as a single image. If False, save each step as a separate image.",
+    )
     return parser.parse_args()
 
 
@@ -625,18 +639,21 @@ def main():
                     constraints,
                     receptacle_icon_mapping,
                     cropped_receptacle_icon_mapping,
+                    single_image=args.single_image,
                     instruction=run_data["instruction"],
                     save_path=os.path.join(
-                        save_directory, f"viz_{episode_id}.png"
+                        save_directory, f"viz_{episode_id}"
                     ),
                     object_to_recep=episode_data["object_to_recep"],
                     object_to_room=episode_data["object_to_room"],
-                    object_to_states=episode_data["object_to_states"],
+                    object_to_states=episode_data.get("object_to_states", None),
                 )
 
             # Add run data for the current episode to the dictionary
-            run_data["viz_path"] = os.path.join(
-                save_directory, f"viz_{episode_id}.png"
+            run_data["viz_paths"] = os.listdir(
+                os.path.join(
+                    save_directory, f"viz_{episode_id}"
+                )
             )
             run_data_dict["episodes"].append(run_data)
 
