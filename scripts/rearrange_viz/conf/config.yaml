@@ -86,7 +86,7 @@ scene:
   target_width: 6000
   temporal_scene_margin: 100
   instruction_text_size: 22
-  per_instruction_line_height: 150
-  max_chars_per_line: 80
+  per_instruction_line_height: 100
+  max_chars_per_line: 100
 
 width_inches: 20

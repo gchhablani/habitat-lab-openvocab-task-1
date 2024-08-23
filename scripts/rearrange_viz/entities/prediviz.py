@@ -28,7 +28,7 @@ class PrediViz:
             )
             ax.text(
                 frac,
-                (height_upper - height_lower - self.extra_instruction_height / 2) / (height_upper - height_lower),
+                (height_upper - height_lower - self.extra_instruction_height) / (height_upper - height_lower),
                 wrapped_text,
                 horizontalalignment="center",
                 verticalalignment="bottom",
