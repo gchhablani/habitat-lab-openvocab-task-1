@@ -43,17 +43,20 @@ def create_samples(json_file, output_dir, sample_set_size, num_directories, over
         for episode_idx, episode in enumerate(exclusive_example_list):
             new_episode = {}
             for key, value in episode.items():
-                if key == 'viz_path':
+                if key == 'viz_paths':
                     # Copy images to assets directory
-                    image_name = os.path.basename(value)
-                    current_idx = episode_idx
-                    new_episode["idx"] = current_idx
-                    new_image_name = image_name.split('_')[0] + f"_{current_idx}.png"
-                    new_image_path = os.path.join(assets_dir, f"{new_image_name}")
-                    shutil.copy(value, new_image_path)
+                    new_episode[key] = {}
+                    for step_id, image_path in value.items():
+                        image_name = image_path.split('/')[-1] # step ID
+                        dir_name = image_path.split('/')[-2] # episode ID
+                        current_idx = episode_idx
+                        os.makedirs(os.path.join(assets_dir, f"viz_{current_idx}"), exist_ok=True)
+                        new_episode["idx"] = current_idx
+                        new_image_name = image_name
+                        new_image_path = os.path.join(assets_dir, f"viz_{current_idx}", f"{new_image_name}")
+                        shutil.copy(image_path, new_image_path)
+                        new_episode[key][step_id] = os.path.join("./assets", f"viz_{current_idx}", f"{new_image_name}")
 
-                    # Update viz_path in new_episode
-                    new_episode[key] = f"assets/{new_image_name}"
                 else:
                     new_episode[key] = value
             new_episodes.append(new_episode)
@@ -61,17 +64,18 @@ def create_samples(json_file, output_dir, sample_set_size, num_directories, over
         for episode_idx, episode in enumerate(common_examples):
             new_episode = {}
             for key, value in episode.items():
-                if key == 'viz_path':
-                    # Copy images to assets directory
-                    image_name = os.path.basename(value)
-                    current_idx = episode_idx + len(exclusive_example_list)
-                    new_episode["idx"] = current_idx
-                    new_image_name = image_name.split('_')[0] + f"_{current_idx}.png"
-                    new_image_path = os.path.join(assets_dir, f"{new_image_name}")
-                    shutil.copy(value, new_image_path)
-
-                    # Update viz_path in new_episode
-                    new_episode[key] = f"assets/{new_image_name}"
+                if key == 'viz_paths':
+                    new_episode[key] = {}
+                    for image_path in value:
+                        image_name = image_path.split('/')[-1]
+                        dir_name = image_path.split('/')[-2]
+                        current_idx = episode_idx + len(exclusive_example_list)
+                        os.makedirs(os.path.join(assets_dir, f"viz_{current_idx}"), exist_ok=True)
+                        new_episode["idx"] = current_idx
+                        new_image_name = image_name
+                        new_image_path = os.path.join(assets_dir, f"viz_{current_idx}", f"{new_image_name}")
+                        shutil.copy(image_path, new_image_path)
+                        new_episode[key][step_id] = os.path.join("./assets", f"viz_{current_idx}", f"{new_image_name}")
                 else:
                     new_episode[key] = value
             new_episodes.append(new_episode)
@@ -91,6 +95,10 @@ def create_samples(json_file, output_dir, sample_set_size, num_directories, over
         modified_html_file_path = os.path.join(sample_dir, "interface.html")
         with open(modified_html_file_path, 'w') as f:
             f.write(html_content)
+            
+        # Copy the server.py file
+        server_file_path = "scripts/rearrange_viz/interface/server.py"
+        shutil.copy(server_file_path, os.path.join(sample_dir, "server.py"))
 
         # Copy the README file
         readme_file_path = "scripts/rearrange_viz/interface/README.md"
@@ -111,8 +119,8 @@ def create_samples(json_file, output_dir, sample_set_size, num_directories, over
         
 
 if __name__ == "__main__":
-    json_file = "temporal_test_samples_200_run_data.json"
-    output_dir = "temporal_test_samples_200_2_splits"
+    json_file = "temporal_test_run_data.json"
+    output_dir = "temporal_test_2_splits"
     sample_set_size = -1  # out of all, pick 1k
     num_directories = 2 # make 3 sample directories
     overlap_samples = 0

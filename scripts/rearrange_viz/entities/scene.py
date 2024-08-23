@@ -381,12 +381,11 @@ class Scene:
         ax,
         propositions,
         mentioned_rooms,
-        single_image=True,
         step_idx=0,
+        single_image=True,
         height_offset=0,
         all_mentioned_rooms=None,
     ):
-
         ax, height_lower, height_upper = self.plot_room_rows(
             mentioned_rooms,
             ax,
@@ -399,7 +398,7 @@ class Scene:
         if not single_image:
             # Currently, support is only for non-single image because height_upper is always 0
             # For single image, we need some added logic to get correct upper height
-            self.plot_time_step_box(ax, step_idx, height_upper)
+            self.plot_time_step_box(ax, step_idx+1, height_upper)
         
         return ax, height_lower, height_upper
 
@@ -632,7 +631,7 @@ class Scene:
                     for room in self.rooms:
                         room.init_size()
                 self.height = max_upper - min_lower
-                return fig, ax, min_lower, max_upper, prop_to_height_range
+                return [(fig, ax, min_lower, max_upper, prop_to_height_range)]
             else:
                 all_mentioned_rooms = self.get_all_mentioned_rooms(propositions)
                 fig_data = []
@@ -673,14 +672,21 @@ class Scene:
                 self.height = max_upper - min_lower # Does not matter
                 return fig_data
         else:
+            if ax is None:
+                fig, ax = plt.subplots()
+                fig.patch.set_facecolor(BACKGROUND_COLOR)
+            else:
+                fig = plt.gcf()
             mentioned_rooms = self.extract_info_before_plot(propositions)
             ax, height_lower, height_upper = (
                 self.plot_one_time_step(
                     ax,
                     propositions,
                     mentioned_rooms,
+                    step_idx=0,
+                    single_image=True,
                 )
             )
             prop_to_height_range[0] = (height_lower, height_upper, 0)
             self.height = height_upper - height_lower
-            return fig, ax, height_lower, height_upper, prop_to_height_range
+            return [(fig, ax, height_lower, height_upper, prop_to_height_range)]

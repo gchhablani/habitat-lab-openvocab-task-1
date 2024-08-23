@@ -183,6 +183,7 @@ def plot_scene(
         cropped_receptacle_icon_mapping,
         single_image=single_image,
     )
+    step_id_to_path_mapping = {}
     for step_idx, (fig, ax, final_height, final_width) in enumerate(result_fig_data):
         width_inches = config.width_inches
         fig.set_size_inches(
@@ -199,12 +200,14 @@ def plot_scene(
             fig.savefig(
                 os.path.join(save_path, f"step_{step_idx}.png"), dpi=400
             )
+            step_id_to_path_mapping[step_idx] = os.path.join(save_path, f"step_{step_idx}.png")
         else:
             fig.show()
         fig.clear()
     plt.close()
     scene.cleanup()
     del scene
+    return step_id_to_path_mapping
 
 
 def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
@@ -632,7 +635,7 @@ def main():
                     os.path.join(save_directory, f"viz_{episode_id}.png"),
                 )
             else:
-                plot_scene(
+                step_id_to_path_mapping = plot_scene(
                     config,
                     episode_data,
                     propositions,
@@ -650,11 +653,7 @@ def main():
                 )
 
             # Add run data for the current episode to the dictionary
-            run_data["viz_paths"] = os.listdir(
-                os.path.join(
-                    save_directory, f"viz_{episode_id}"
-                )
-            )
+            run_data["viz_paths"] = step_id_to_path_mapping
             run_data_dict["episodes"].append(run_data)
 
             # Save the run data dictionary to a JSON file

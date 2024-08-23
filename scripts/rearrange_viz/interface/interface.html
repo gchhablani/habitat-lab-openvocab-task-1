@@ -439,123 +439,118 @@
     </div>
 
     <script>
-        let images = [];
-        for (let i = 0; i <= NUMBER_OF_IMAGES_IN_SAMPLE; i++) {
-            images.push(`assets/viz_${i}.png`);
-        }
-        let imageData = [];
-        let currentIndex = 0;
+        let episodes = [];
+        let imageData = {};
+        let currentEpisodeIndex = 0;
+        let currentStepIndex = 0;
 
-        function updateEpisodeInfo(index) {
-            document.getElementById("episodeInfo").textContent = `Episode ${index + 1} out of ${images.length}`;
+        async function loadJSONData() {
+            const response = await fetch('./sample_episodes.json');
+            const jsonData = await response.json();
+
+            jsonData.episodes.forEach((episode, episodeIndex) => {
+                let steps = [];
+                for (let step in episode.viz_paths) {
+                    steps.push(episode.viz_paths[step]);
+                }
+                episodes.push(steps);
+            });
+
+            loadImage(currentEpisodeIndex, currentStepIndex); // Load the first image once JSON is loaded
         }
 
-        function loadImage(index) {
-            document.getElementById("currentImage").src = images[index];
-            currentIndex = index;
-            updateInputFields(currentIndex);
-            updateEpisodeInfo(index);
+        function updateEpisodeInfo(episodeIndex, stepIndex) {
+            document.getElementById("episodeInfo").textContent = `Episode ${episodeIndex + 1}, Step ${stepIndex + 1} out of ${episodes[episodeIndex].length}`;
+        }
+
+        function loadImage(episodeIndex, stepIndex) {
+            document.getElementById("currentImage").src = episodes[episodeIndex][stepIndex];
+            currentEpisodeIndex = episodeIndex;
+            currentStepIndex = stepIndex;
+            updateInputFields(currentEpisodeIndex, currentStepIndex);
+            updateEpisodeInfo(currentEpisodeIndex, currentStepIndex);
         }
 
         function goToEpisode() {
             let episodeInput = document.getElementById("episodeInput").value;
             if (episodeInput !== "") {
                 let episodeNumber = parseInt(episodeInput);
-                if (!isNaN(episodeNumber) && episodeNumber >= 1 && episodeNumber <= images.length) {
-                    saveData(currentIndex);
-                    loadImage(episodeNumber - 1);
-                    currentIndex = episodeNumber - 1;
+                if (!isNaN(episodeNumber) && episodeNumber >= 1 && episodeNumber <= episodes.length) {
+                    saveData(currentEpisodeIndex, currentStepIndex);
+                    loadImage(episodeNumber - 1, 0); // Load the first step of the specified episode
                     document.querySelector('.box').scrollTop = 0;
                 } else {
-                    alert("Invalid episode number. Please enter a number between 1 and " + images.length);
+                    alert("Invalid episode number. Please enter a number between 1 and " + episodes.length);
                 }
             } else {
                 alert("Please enter an episode number.");
             }
         }
 
-        function updateInputFields(index) {
-            let data = imageData[index];
-            if (data) {
-                document.getElementById("comments").value = data.comments || "";
+        function updateInputFields(episodeIndex, stepIndex) {
+            let data = (imageData[episodeIndex] && imageData[episodeIndex][stepIndex]) || {};
+            document.getElementById("comments").value = data.comments || "";
 
-                let taskCorrectnessValue = data.task_correctness || "";
-                let taskRadioButtons = document.querySelectorAll('input[name="task_correctness"]');
-                taskRadioButtons.forEach(button => {
-                    if (button.value === taskCorrectnessValue) {
-                        button.checked = true;
-                    } else {
-                        button.checked = false;
-                    }
-                });
-
-                let evalCorrectnessValue = data.eval_correctness || "";
-                let evalRadioButtons = document.querySelectorAll('input[name="eval_correctness"]');
-                evalRadioButtons.forEach(button => {
-                    if (button.value === evalCorrectnessValue) {
-                        button.checked = true;
-                    } else {
-                        button.checked = false;
-                    }
-                });
-
-                let taskRemarks = data.task_remarks || [];
-                let taskRemarkCheckboxes = document.querySelectorAll('input[name="task_remarks[]"]');
-                taskRemarkCheckboxes.forEach(checkbox => {
-                    checkbox.checked = taskRemarks.includes(checkbox.value);
-                });
-
-                let evalRemarks = data.eval_remarks || [];
-                let evalRemarkCheckboxes = document.querySelectorAll('input[name="eval_remarks[]"]');
-                evalRemarkCheckboxes.forEach(checkbox => {
-                    checkbox.checked = evalRemarks.includes(checkbox.value);
-                });
-
-            } else {
-                document.getElementById("comments").value = "";
-                let taskRadioButtons = document.querySelectorAll('input[name="task_correctness"]');
-                taskRadioButtons.forEach(button => {
+            let taskCorrectnessValue = data.task_correctness || "";
+            let taskRadioButtons = document.querySelectorAll('input[name="task_correctness"]');
+            taskRadioButtons.forEach(button => {
+                if (button.value === taskCorrectnessValue) {
+                    button.checked = true;
+                } else {
                     button.checked = false;
-                });
-                let evalRadioButtons = document.querySelectorAll('input[name="eval_correctness"]');
-                evalRadioButtons.forEach(button => {
+                }
+            });
+
+            let evalCorrectnessValue = data.eval_correctness || "";
+            let evalRadioButtons = document.querySelectorAll('input[name="eval_correctness"]');
+            evalRadioButtons.forEach(button => {
+                if (button.value === evalCorrectnessValue) {
+                    button.checked = true;
+                } else {
                     button.checked = false;
-                });
-                let taskRemarkCheckboxes = document.querySelectorAll('input[name="task_remarks[]"]');
-                taskRemarkCheckboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-                let evalRemarkCheckboxes = document.querySelectorAll('input[name="eval_remarks[]"]');
-                evalRemarkCheckboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-            }
+                }
+            });
+
+            let taskRemarks = data.task_remarks || [];
+            let taskRemarkCheckboxes = document.querySelectorAll('input[name="task_remarks[]"]');
+            taskRemarkCheckboxes.forEach(checkbox => {
+                checkbox.checked = taskRemarks.includes(checkbox.value);
+            });
+
+            let evalRemarks = data.eval_remarks || [];
+            let evalRemarkCheckboxes = document.querySelectorAll('input[name="eval_remarks[]"]');
+            evalRemarkCheckboxes.forEach(checkbox => {
+                checkbox.checked = evalRemarks.includes(checkbox.value);
+            });
         }
 
-        function saveData(index) {
+        function saveData(episodeIndex, stepIndex) {
             let commentsValue = document.getElementById("comments").value;
             let taskCorrectness = document.querySelector('input[name="task_correctness"]:checked')?.value;
             let evalCorrectness = document.querySelector('input[name="eval_correctness"]:checked')?.value;
             let taskRemarks = Array.from(document.querySelectorAll('input[name="task_remarks[]"]:checked')).map(checkbox => checkbox.value);
             let evalRemarks = Array.from(document.querySelectorAll('input[name="eval_remarks[]"]:checked')).map(checkbox => checkbox.value);
 
-            // if (taskCorrectness && evalCorrectness) {
             let data = {
-                index: index,
-                image: images[index],
+                episode: episodeIndex,
+                step: stepIndex,
+                image: episodes[episodeIndex][stepIndex],
                 comments: commentsValue,
                 task_correctness: taskCorrectness,
                 eval_correctness: evalCorrectness,
                 task_remarks: taskRemarks,
                 eval_remarks: evalRemarks,
             };
-            imageData[index] = data;
-            //}
+
+            if (!imageData[episodeIndex]) {
+                imageData[episodeIndex] = {};
+            }
+            imageData[episodeIndex][stepIndex] = data;
         }
 
         function saveImageDataToJSON() {
-            saveData(currentIndex);
-            let jsonData = JSON.stringify(imageData.filter(data => data !== undefined), null, 2);
+            saveData(currentEpisodeIndex, currentStepIndex);
+            let jsonData = JSON.stringify(imageData, null, 2);
             let blob = new Blob([jsonData], { type: 'application/json' });
             let link = document.createElement("a");
             link.href = window.URL.createObjectURL(blob);
@@ -566,27 +561,32 @@
         }
 
         function prevImage() {
-            saveData(currentIndex);
-            if (currentIndex > 0) {
-                loadImage(currentIndex - 1);
-                document.querySelector('.box').scrollTop = 0;
+            saveData(currentEpisodeIndex, currentStepIndex);
+            if (currentStepIndex > 0) {
+                loadImage(currentEpisodeIndex, currentStepIndex - 1);
+            } else if (currentEpisodeIndex > 0) {
+                loadImage(currentEpisodeIndex - 1, episodes[currentEpisodeIndex - 1].length - 1);
             }
+            document.querySelector('.box').scrollTop = 0;
         }
 
         function nextImage() {
-            saveData(currentIndex);
-            if (currentIndex < images.length - 1) {
-                loadImage(currentIndex + 1);
-                document.querySelector('.box').scrollTop = 0;
+            saveData(currentEpisodeIndex, currentStepIndex);
+            if (currentStepIndex < episodes[currentEpisodeIndex].length - 1) {
+                loadImage(currentEpisodeIndex, currentStepIndex + 1);
+            } else if (currentEpisodeIndex < episodes.length - 1) {
+                loadImage(currentEpisodeIndex + 1, 0);
             }
+            document.querySelector('.box').scrollTop = 0;
         }
 
-        prevBtn.addEventListener("click", prevImage);
-        nextBtn.addEventListener("click", nextImage);
-        saveBtn.addEventListener("click", saveImageDataToJSON);
-        goToEpisodeBtn.addEventListener("click", goToEpisode);
+        document.getElementById("prevBtn").addEventListener("click", prevImage);
+        document.getElementById("nextBtn").addEventListener("click", nextImage);
+        document.getElementById("saveBtn").addEventListener("click", saveImageDataToJSON);
+        document.getElementById("goToEpisodeBtn").addEventListener("click", goToEpisode);
+
         window.onload = function () {
-            loadImage(currentIndex);
+            loadJSONData();
         };
     </script>
 </body>

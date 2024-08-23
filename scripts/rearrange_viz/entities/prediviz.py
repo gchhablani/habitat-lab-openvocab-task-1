@@ -273,10 +273,9 @@ class PrediViz:
 
         # Create legends data
         self._create_legend_data(propositions, toposort, same_args_data, diff_args_data, cropped_receptacle_icon_mapping, single_image, fig_data)
-        print(self.fig_data_idx_to_legend_idxs, self.legends)
         result_fig_data = []
         for fig_data_idx, (fig, ax, height_lower, height_upper, prop_to_height_range) in enumerate(fig_data):
-            if self.legends:
+            if self.legends and fig_data_idx in self.fig_data_idx_to_legend_idxs:
                 current_legends = [self.legends[idx] for idx in self.fig_data_idx_to_legend_idxs[fig_data_idx]]
                 current_legend_bounds = [self.legend_bounds[idx] for idx in self.fig_data_idx_to_legend_idxs[fig_data_idx]]
                 # Plot legends
@@ -292,7 +291,6 @@ class PrediViz:
                 final_lower = height_lower
             # Add instruction on top
             if show_instruction:
-                print("Here")
                 self.compute_extra_height()
                 final_upper += self.extra_instruction_height
                 wrapped_text = self.plot_instruction(
