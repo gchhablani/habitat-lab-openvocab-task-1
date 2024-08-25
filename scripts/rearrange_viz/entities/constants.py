@@ -40,6 +40,7 @@ receptacle_color_map = {
     "shower": (0.5, 0.5, 1.0),          # Cornflower Blue
     "filing_cabinet": (0.9, 0.6, 0.2),  # Dark Goldenrod
     "car": (0.8, 0.0, 0.0),             # Red
+    "unknown": (0.7, 0.7, 0.7),         # Silver
 }
 
 
@@ -181,6 +182,7 @@ receptacle_properties = {
     "toilet": {"is_on_top": True, "is_inside": True, "is_same": False},
     "shower": {"is_on_top": True, "is_inside": False, "is_same": False},
     "car": {"is_on_top": True, "is_inside": True, "is_same": False},
+    "unknown": {"is_on_top": True, "is_inside": True, "is_same": False},
 }
 
 # Define a color palette for the propositions

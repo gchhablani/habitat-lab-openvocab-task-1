@@ -36,6 +36,14 @@ class Receptacle:
         self.plot_center_placeholder = False
 
         self.next_top_item_position = None
+        
+        self.default_states = {
+            "is_clean": False,
+            "is_filled": False,
+            "is_powered_on": False,
+        }
+        self.previous_states = self.default_states.copy()
+        self.states = {}
 
         self.init_size()
 
@@ -92,6 +100,79 @@ class Receptacle:
             ) + self.object_config.bottom_text_extra_margin
         )
 
+    def plot_state_attributes(self, ax, origin):
+        # Plot only if the state is different from the default state or the previous state
+        if self.states == self.previous_states:
+            return
+
+        # Plot the attributes as a text
+        if "is_clean" in self.states:
+            if self.states["is_clean"]:
+                ax.text(
+                    self.center_placeholder_position[0],
+                    origin[1] - self.config.state_text_relative_height,
+                    "clean",
+                    ha="center",
+                    va="center",
+                    fontsize=13,
+                    color="white",
+                )
+            else:
+                ax.text(
+                    self.center_placeholder_position[0],
+                    origin[1] - self.config.state_text_relative_height,
+                    "dirty",
+                    ha="center",
+                    va="center",
+                    fontsize=13,
+                    color="black",
+                )
+
+        if "is_filled" in self.states:
+            if self.states["is_filled"]:
+                ax.text(
+                    self.center_placeholder_position[0],
+                    origin[1] - 2 * self.config.state_text_relative_height,
+                    "filled",
+                    ha="center",
+                    va="center",
+                    fontsize=13,
+                    color="white",
+                )
+            else:
+                ax.text(
+                    self.center_placeholder_position[0],
+                    origin[1] - 2 * self.config.state_text_relative_height,
+                    "empty",
+                    ha="center",
+                    va="center",
+                    fontsize=13,
+                    color="black",
+                )
+
+        if "is_powered_on" in self.states:
+            if self.states["is_powered_on"]:
+                ax.text(
+                    self.center_placeholder_position[0],
+                    origin[1] - 3 * self.config.state_text_relative_height,
+                    "on",
+                    ha="center",
+                    va="center",
+                    fontsize=13,
+                    color="white",
+                )
+            else:
+                ax.text(
+                    self.center_placeholder_position[0],
+                    origin[1] - 3 * self.config.state_text_relative_height,
+                    "off",
+                    ha="center",
+                    va="center",
+                    fontsize=13,
+                    color="black",
+                )
+
+
     def plot_placeholders(self, ax):
         assert hasattr(self, "next_top_item_position"), (
             f"next item position is not set for receptacle: {self.receptacle_id}"
@@ -137,6 +218,7 @@ class Receptacle:
         )
         self.set_placeholder_positions(icon, origin)
         self.plot_placeholders(ax)
+        self.plot_state_attributes(ax, origin)
 
         if created_fig:
             ax.axis("off")

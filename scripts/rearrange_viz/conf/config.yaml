@@ -13,6 +13,7 @@ object:
   on_floor_linewidth: 2
 
 receptacle:
+  state_text_relative_height: 70
   horizontal_margin: 5
   target_height: 500 # 0.35 * full_height
   placeholder:
@@ -30,7 +31,7 @@ room:
   horizontal_margin: 10
   vertical_margin: 10
   top_pad: 100
-  bottom_pad: 170
+  bottom_pad: 500
   left_pad: 20
   right_pad: 20
   placeholder_height: 0.75 # of room height

@@ -148,9 +148,14 @@ def plot_scene(
                 icon_path = receptacle_icon_mapping.get(
                     receptacle_id, "receptacles/chair@2x.png"
                 )
-                room_receptacles.append(
-                    Receptacle(config, receptacle_id, icon_path)
-                )
+                new_recep = Receptacle(config, receptacle_id, icon_path)
+
+                # NOTE: Receptacle also have states, but they MIGHT be present in the object_to_states
+                if object_to_states is not None and receptacle_id in object_to_states:
+                    room_receptacles.states = object_to_states[receptacle_id]
+                    room_receptacles.previous_states = object_to_states[receptacle_id].copy()
+                room_receptacles.append(new_recep)
+                
         room_objects = [
             obj
             for obj in objects
@@ -274,11 +279,32 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
             #     raise NotImplementedError(
             #         f'Given number {proposition["args"]["number"]} does not match number of objects {len(proposition["args"]["object_handles"])} in proposition. Not handled currently.'
             #     )
-            proposition["args"]["object_names"] = []
-            for object_handle in proposition["args"]["object_handles"]:
-                proposition["args"]["object_names"].append(
-                    handle_to_object[object_handle]
-                )
+
+
+            # For the state propositions, object handles might have receptacle names.
+            
+            if proposition["function_name"] in ["is_clean", "is_filled", "is_powered_on", "is_powered_off"]:
+                for handle in proposition["args"]["object_handles"]:
+                    if handle in handle_to_recep:
+                        if "receptacle_names" not in proposition["args"]:
+                            proposition["args"]["receptacle_names"] = []
+                        proposition["args"]["receptacle_names"].append(
+                            handle_to_recep[handle]
+                        )
+                    else:
+                        if "object_names" not in proposition["args"]:
+                            proposition["args"]["object_names"] = []
+                        proposition["args"]["object_names"].append(
+                            handle_to_object[handle]
+                        )
+            else:
+                # They have to be present in handle_to_object
+                proposition["args"]["object_names"] = []
+                for object_handle in proposition["args"]["object_handles"]:
+                    proposition["args"]["object_names"].append(
+                        handle_to_object[object_handle]
+                    )
+
         if "receptacle_handles" in proposition["args"]:
             proposition["args"]["receptacle_names"] = []
             for recep_handle in proposition["args"]["receptacle_handles"]:

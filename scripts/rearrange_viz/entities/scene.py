@@ -312,12 +312,39 @@ class Scene:
 
         return ax, height_lower, height_upper
 
+    def process_state_changes(self, propositions):
+        for proposition in propositions:
+            function_name = proposition["function_name"]
+            args = proposition["args"]
+            if function_name in ["is_clean", "is_filled", "is_powered_on", "is_powered_off"]:
+                if "object_names" in args:
+                    object_names = args["object_names"]
+                    for object_name in object_names:
+                        for room in self.rooms:
+                            object_obj = room.find_object_by_id(object_name)
+                            if object_obj:
+                                if function_name != "is_powered_off":
+                                    object_obj.states[function_name] = True
+                                else:
+                                    object_obj.states["is_powered_on"] = False
+                else:
+                    receptacle_names = args["receptacle_names"]
+                    for receptacle_name in receptacle_names:
+                        for room in self.rooms:
+                            receptacle_obj = room.find_receptacle_by_id(receptacle_name)
+                            if receptacle_obj:
+                                if function_name != "is_powered_off":
+                                    receptacle_obj.states[function_name] = True
+                                else:
+                                    receptacle_obj.states["is_powered_on"] = False
+
 
     def plot_propositions(self, ax, propositions, height_upper):
         for proposition in propositions:
             function_name = proposition["function_name"]
             args = proposition["args"]
             if "object_names" in args:
+                # Handles is_on_top, is_inside, is_on_floor
                 object_names = args["object_names"]
                 number = args["number"]
                 color = proposition["color"]
@@ -342,16 +369,6 @@ class Scene:
                         color,
                         height_upper,
                     )
-                elif function_name in ["is_clean", "is_filled", "is_powered_on", "is_powered_off"]:
-                    object_names = args["object_names"]
-                    for object_name in object_names:
-                        for room in self.rooms:
-                            object_obj = room.find_object_by_id(object_name)
-                            if object_obj:
-                                if(function_name != "is_powered_off"):
-                                    object_obj.states[function_name] = True
-                                else:
-                                    object_obj.states["is_powered_on"] = False
 
     def plot_time_step_box(self, ax, step_idx, height_upper):
         # plot a small square on top right corner to indicate the time step
@@ -386,6 +403,8 @@ class Scene:
         height_offset=0,
         all_mentioned_rooms=None,
     ):
+        self.process_state_changes(propositions)
+
         ax, height_lower, height_upper = self.plot_room_rows(
             mentioned_rooms,
             ax,
@@ -430,7 +449,17 @@ class Scene:
             elif prop["function_name"] == "is_next_to":
                 continue
             elif prop["function_name"] in ["is_clean", "is_filled", "is_powered_on", "is_powered_off"]:
-                mentioned_objs += prop["args"]["object_names"]
+                if "object_names" in prop["args"]:
+                    mentioned_objs += prop["args"]["object_names"]
+                elif "receptacle_names" in prop["args"]:
+                    mentioned_receps += [
+                        (prop["function_name"], recep_name)
+                        for recep_name in prop["args"]["receptacle_names"]
+                    ]
+                else:
+                    raise NotImplementedError(
+                        f"Not implemented for function with name: {prop['function_name']} and no receptacle_names or object_names."
+                    )
             else:
                 raise NotImplementedError(
                     f"Not implemented for function with name: {prop['function_name']}."
