@@ -85,12 +85,15 @@ class Room:
                 ):  
                     # print(obj.object_id)
                     receptacle_id = self.object_to_recep[obj.object_id]
-                    current_receptacle = self.find_receptacle_by_id(
-                        receptacle_id
-                    )
-                    current_receptacle.temp_mx_height += abs(obj.config.text_margin) + 2 * obj.config.height
-                    # We take max of all top item positions for now
-                    self.room_height = max(self.room_height, current_receptacle.temp_mx_height)
+                    if receptacle_id.startswith("floor_"):
+                        continue
+                    else:
+                        current_receptacle = self.find_receptacle_by_id(
+                            receptacle_id
+                        )
+                        current_receptacle.temp_mx_height += abs(obj.config.text_margin) + 2 * obj.config.height
+                        # We take max of all top item positions for now
+                        self.room_height = max(self.room_height, current_receptacle.temp_mx_height)
         self.room_height = self.room_height + self.config.bottom_pad + self.config.top_pad
         self.height = self.room_height + 2 * self.config.vertical_margin
         
@@ -131,6 +134,7 @@ class Room:
                 if (
                     self.object_to_recep is None
                     or obj.object_id not in self.object_to_recep.keys()
+                    or self.object_to_recep[obj.object_id].startswith("floor_")
                 ):
                     total_object_width += obj.width
                     num_objects += 1
@@ -155,6 +159,7 @@ class Room:
                 if (
                     self.object_to_recep is None
                     or obj.object_id not in self.object_to_recep.keys()
+                    or self.object_to_recep[obj.object_id].startswith("floor_")
                 ):
                     ax = obj.plot(
                         ax,
@@ -169,6 +174,7 @@ class Room:
                 elif (
                     self.object_to_recep is not None
                     and obj.object_id in self.object_to_recep.keys()
+                    and not self.object_to_recep[obj.object_id].startswith("floor_")
                 ):
                     receptacle_id = self.object_to_recep[obj.object_id]
                     # print(obj.object_id, self.room_id, receptacle_id, self.object_to_recep)

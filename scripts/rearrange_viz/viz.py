@@ -160,6 +160,11 @@ def plot_scene(
             obj
             for obj in objects
             if episode_data["object_to_room"][obj.object_id] == room_id
+            or (
+                obj.object_id in episode_data["object_to_recep"] and
+                episode_data["object_to_recep"][obj.object_id].startswith("floor_") and
+                episode_data["object_to_recep"][obj.object_id][len("floor_"):] == room_id
+            )
         ]
         room = Room(
             config,
@@ -385,7 +390,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                         {
                             'common_entities': propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"],
                             'corresponding_entities': propositions[proposition_index]["args"][f"entity_handles_{opposite_entity_index}_names_and_types"],
-                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"]["entity_handles_a"]) else 'solid',
+                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"]) else 'solid',
                             'global_proposition_index': proposition_index,
                         }
                     )
@@ -438,7 +443,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                         {
                             'different_entities': propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"],
                             'corresponding_entities': propositions[proposition_index]["args"][f"entity_handles_{opposite_entity_index}_names_and_types"],
-                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"]["object_names"]) else 'solid',
+                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"][f"entity_handles_{entity_index}_names_and_types"]) else 'solid',
                             'global_proposition_index': proposition_index,
                         }
                     )
@@ -448,7 +453,7 @@ def get_episode_data_for_plot(args, episode_id, loaded_run_data=None):
                         {
                             'different_entities': [(item, arg_name.split("_")[0]) for item in propositions[proposition_index]["args"][arg_name]],
                             'corresponding_entities': [(item, right_name.split("_")[0]) for item in propositions[proposition_index]["args"][right_name]],
-                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"]["object_names"]) else 'solid',
+                            'line_style': 'dotted' if propositions[proposition_index]["args"]["number"] < len(propositions[proposition_index]["args"][f"object_names"]) else 'solid',
                             'global_proposition_index': proposition_index,
                         }
                     )

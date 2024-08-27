@@ -557,7 +557,9 @@ class Scene:
         evaluation_constraints = deepcopy(evaluation_constraints)
         # Update the object_to_recep and object_to_room mappings
         new_object_to_recep, new_object_to_room = update_object_recep_and_room(self.object_to_recep, self.object_to_room, current_propositions, evaluation_propositions, evaluation_constraints, global_to_local_idx)
-
+        
+        # for room in self.rooms:
+        #     print(room.room_id, [obj.object_id for obj in room.objects])
         # Handle objects with only new receptacle mappings but no new room mappings
         for obj_name, new_recep in new_object_to_recep.items():
             # Find the current room containing the object
@@ -570,13 +572,17 @@ class Scene:
             
             # Find the room containing the new receptacle
             for room in self.rooms:
-                recep = room.find_receptacle_by_id(new_recep)
-                if recep:
-                    # Add the object to the room containing the new receptacle
+                if new_recep.startswith("floor_") and room.room_id == new_recep[len("floor_"):]:
                     room.objects.append(obj)
                     new_object_to_room[obj_name] = room.room_id
-                    break
-
+                    
+                else:
+                    recep = room.find_receptacle_by_id(new_recep)
+                    if recep:
+                        # Add the object to the room containing the new receptacle
+                        room.objects.append(obj)
+                        new_object_to_room[obj_name] = room.room_id
+                        break
         # Move objects across rooms and update attributes
         for obj_name, new_room_id in new_object_to_room.items():
             new_room = self.room_id_to_room.get(new_room_id)
@@ -588,7 +594,6 @@ class Scene:
                         # Remove the object from the current room
                         room.objects.remove(obj)
                         break
-                
                 # Add the object to the new room
                 new_room.objects.append(obj)
 
