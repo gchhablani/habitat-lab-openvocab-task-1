@@ -152,8 +152,8 @@ def plot_scene(
 
                 # NOTE: Receptacle also have states, but they MIGHT be present in the object_to_states
                 if object_to_states is not None and receptacle_id in object_to_states:
-                    room_receptacles.states = object_to_states[receptacle_id]
-                    room_receptacles.previous_states = object_to_states[receptacle_id].copy()
+                    new_recep.states = object_to_states[receptacle_id]
+                    new_recep.previous_states = object_to_states[receptacle_id].copy()
                 room_receptacles.append(new_recep)
                 
         room_objects = [
