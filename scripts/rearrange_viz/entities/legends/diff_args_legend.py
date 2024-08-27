@@ -49,7 +49,7 @@ class DiffArgsLegend:
             edge_style = {}
             color_dict = {}
             left_elements = set()
-            right_elements = set()
+            right_elements = []
             line_styles = []
             colors = []
             for item in diff_args_data:
