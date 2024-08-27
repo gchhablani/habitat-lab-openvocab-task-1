@@ -208,8 +208,7 @@ def plot_scene(
             step_id_to_path_mapping[step_idx] = os.path.join(save_path, f"step_{step_idx}.png")
         else:
             fig.show()
-        fig.clear()
-    plt.close()
+        plt.close(fig)
     scene.cleanup()
     del scene
     return step_id_to_path_mapping
@@ -601,13 +600,13 @@ def main():
             print("Sampled episodes unique scenes: ", unique_scenes)
             print("Missing scenes: ", set(scene_ids) - set(unique_scenes))
         else:
-            episode_ids = sorted(
-                [
-                    int(filename.split("_")[-1].split(".")[0])
-                    for filename in os.listdir(args.episode_data_dir)
-                    if filename.startswith("episode_")
-                ]
-            )
+            episode_ids = []
+            for filename in os.listdir(args.episode_data_dir):
+                if args.episode_file_prefix == "" or filename.startswith(args.episode_file_prefix):
+                    episode_ids.append(
+                        int(filename.split("_")[-1].split(".")[0])
+                    )
+            episode_ids = sorted(episode_ids)
 
     # Create a dictionary to store run data for episod es with correct visualizations
     run_data_dict = {"config": None, "episodes": []}
