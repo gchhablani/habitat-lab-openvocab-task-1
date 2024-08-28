@@ -1,7 +1,7 @@
 import os
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch
+from matplotlib.patches import ConnectionPatch, FancyBboxPatch
 import numpy as np
 from PIL import Image
 
@@ -36,6 +36,32 @@ class Object:
     @property
     def height(self):
         return self.config.height
+
+    def plot_on_floor_line(self, ax):
+        assert self.center_position is not None, f"Center position is empty for object: {self.object_id}"
+        assert self.text_position is not None, f"Text position is empty for object: {self.object_id}"
+        # Calculate the height after the text position based on number of lines in the text 
+        line_start = (
+            self.center_position[0]
+            - self.config.on_floor_line_length_ratio * self.config.width,
+            self.text_position[1] - self.config.extra_space_between_objects / 2,
+        )
+        line_end = (
+            self.center_position[0]
+            + self.config.on_floor_line_length_ratio * self.config.width,
+            self.text_position[1] - self.config.extra_space_between_objects / 2,
+        )
+        line = ConnectionPatch(
+            xyA=line_start,
+            xyB=line_end,
+            coordsA="data",
+            coordsB="data",
+            axesA=ax,
+            axesB=ax,
+            color="white",
+            linewidth=self.config.on_floor_linewidth,
+        )
+        ax.add_artist(line)
 
     def set_icons(self):
         img = Image.open("object_states/object_dirty.png").convert("RGBA")
@@ -76,6 +102,7 @@ class Object:
             fontsize=self.config.text_size,
             zorder=float('inf'),
         )
+
     def hex_to_rgb(self, hex_color):
         # Remove the hash symbol if present
         hex_color = hex_color.lstrip('#')
@@ -159,29 +186,17 @@ class Object:
 
         ax.add_patch(self.object_rect)
 
-        # Calculate the coordinates of the white border if is_on_floor is True
-        if self.is_on_floor:
-            padding = 0.1 * self.config.width  # Adjust this value as needed
-            border_rect = FancyBboxPatch(
-                (origin[0] - padding, origin[1] - padding),
-                self.config.width + 2 * padding,
-                self.config.height + 2 * padding,
-                edgecolor="white",
-                facecolor="none",
-                linewidth=self.config.on_floor_linewidth,
-                linestyle="-",
-                boxstyle=f"Round, pad=0, rounding_size={self.config.rounding_size}",
-                alpha=1.0,
-            )
-
-            ax.add_patch(border_rect)
-
         self.center_position = (
             origin[0] + self.config.width / 2,
             origin[1] + self.config.height / 2,
         )
 
         self.plot_text_label(ax)
+
+        if self.is_on_floor:
+            # Draw a white line below the text label
+            self.plot_on_floor_line(ax)
+
         color = get_object_color(self.object_id)
         self.dirty_icon[self.dirty_icon[:, :, 3] != 0, :3] = self.hex_to_rgb(color)
         self.powered_on_icon[self.powered_on_icon[:, :, 3] != 0, :3] = self.hex_to_rgb(color)

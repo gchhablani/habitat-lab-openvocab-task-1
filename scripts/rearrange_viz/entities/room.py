@@ -91,7 +91,7 @@ class Room:
                         current_receptacle = self.find_receptacle_by_id(
                             receptacle_id
                         )
-                        current_receptacle.temp_mx_height += abs(obj.config.text_margin) + 2 * obj.config.height
+                        current_receptacle.temp_mx_height += abs(obj.config.text_margin) + 2 * obj.config.height + obj.config.extra_space_between_objects
                         # We take max of all top item positions for now
                         self.room_height = max(self.room_height, current_receptacle.temp_mx_height)
         self.room_height = self.room_height + self.config.bottom_pad + self.config.top_pad
@@ -185,7 +185,9 @@ class Room:
                     ax = obj.plot(ax, obj_position)
                     current_receptacle.next_top_item_position = (
                         obj_position[0],
-                        current_receptacle.next_top_item_position[1] + abs(obj.config.text_margin) + 2 * obj.config.height,
+                        current_receptacle.next_top_item_position[1]
+                        + abs(obj.config.text_margin)
+                        + 2 * obj.config.height + obj.config.extra_space_between_objects,
                     )
 
     def plot_receptacles(self, ax, actual_origin):

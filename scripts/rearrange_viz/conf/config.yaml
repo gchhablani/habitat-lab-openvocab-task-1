@@ -2,15 +2,18 @@ defaults:
   - object: default
 
 object:
-  text_margin: -150
+  text_margin: -150 # This controls the space from the center position for the text label for the object
   empty_state_linewidth: 3
-  bottom_text_extra_margin: 50
+  bottom_text_extra_margin: 100 # This controls the height from the receptacle at which objects are placed
   width: 100
   height: 100
   text_size: 13
   rounding_size: 10
   max_chars_per_line: 8
-  on_floor_linewidth: 2
+  on_floor_linewidth: 3
+  on_floor_line_length_ratio: 1.2
+  extra_space_between_objects: 200
+
 
 receptacle:
   state_text_relative_height: 70
