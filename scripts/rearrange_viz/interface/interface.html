@@ -78,7 +78,8 @@
             text-align: center;
         }
 
-        #goToEpisodeBtn {
+        #goToEpisodeBtn,
+        #skipToNextBtn {
             color: #2F3743;
             background-color: white;
             display: inline-block;
@@ -235,6 +236,27 @@
             text-align: center;
             margin: 0 auto;
         }
+
+        #progressContainer {
+            width: 100%;
+            max-width: 75vw;
+            margin: 0.1vh auto;
+            text-align: center;
+        }
+
+        #progressBar {
+            width: 100%;
+            height: 2vh;
+        }
+
+        #progressText {
+            margin-top: 0.1vh;
+            font-size: 1.5vw;
+        }
+
+        #episodeInfo {
+            font-size: 1.5vw;
+        }
     </style>
 </head>
 
@@ -244,6 +266,17 @@
             <div class="column is-half is-offset-one-quarter">
                 <button id="goToEpisodeBtn" class="button">Go To</button>
                 <input type="number" id="episodeInput" class="input" placeholder="Episode Number">
+            </div>
+        </div>
+        <div class="button-container columns is-mobile">
+            <div class="column is-half is-offset-one-quarter">
+                <button id="skipToNextBtn" class="button">Skip</button>
+            </div>
+        </div>
+        <div class="columns is-mobile">
+            <div class="column is-half is-offset-one-quarter" id="progressContainer">
+                <progress id="progressBar" value="0" max="100"></progress>
+                <div id="progressText">0%</div>
             </div>
         </div>
         <p id="episodeInfo" class="episode-info"></p>
@@ -284,7 +317,8 @@
                                 Unresolvable ambiguity
                             </label>
                             <label class="checkbox">
-                                <input type="checkbox" name="task_remarks[]" value="Contradiction"> <span class="checkmark"></span>
+                                <input type="checkbox" name="task_remarks[]" value="Contradiction"> <span
+                                    class="checkmark"></span>
                                 Contradiction
                             </label>
                             <label class="checkbox">
@@ -313,7 +347,8 @@
                                 Missing placement relation
                             </label>
                             <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]" value="Incorrect relation (furniture should have been room)">
+                                <input type="checkbox" name="eval_remarks[]"
+                                    value="Incorrect relation (furniture should have been room)">
                                 <span class="checkmark"></span>
                                 Incorrect relation (furniture should have been room)
                             </label>
@@ -333,12 +368,14 @@
                                 Incorrect object/furniture/room
                             </label>
                             <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]" value="Incorrect/missing &quot;next-to&quot;">
+                                <input type="checkbox" name="eval_remarks[]"
+                                    value="Incorrect/missing &quot;next-to&quot;">
                                 <span class="checkmark"></span>
                                 Incorrect/missing "next-to"
                             </label>
                             <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]" value="Incorrect/missing same/different constraint">
+                                <input type="checkbox" name="eval_remarks[]"
+                                    value="Incorrect/missing same/different constraint">
                                 <span class="checkmark"></span>
                                 Incorrect/missing same/different constraint
                             </label>
@@ -382,6 +419,9 @@
         let imageData = {};
         let currentEpisodeIndex = 0;
         let currentStepIndex = 0;
+        let autoSaveInterval;
+        let totalSteps = 0; // To store total number of steps
+        let annotatedSteps = {}; // To store annotated steps count
 
         async function loadJSONData() {
             const response = await fetch('./sample_episodes.json');
@@ -395,10 +435,45 @@
                 episodes.push(steps);
             });
 
+            totalSteps = episodes.flat().length; // Calculate the total number of steps
+            initializeAnnotatedSteps(); // Initialize annotated steps
+            updateProgress(); // Initialize progress bar
+
             // Load saved annotations
             await loadSavedAnnotations();
 
             loadImage(currentEpisodeIndex, currentStepIndex); // Load the first image once JSON is loaded
+        }
+
+        function initializeAnnotatedSteps() {
+            episodes.forEach((episode, episodeIndex) => {
+                annotatedSteps[episodeIndex] = {};
+                episode.forEach((_, stepIndex) => {
+                    annotatedSteps[episodeIndex][stepIndex] = false;
+                });
+            });
+        }
+
+        function updateProgress() {
+            const progressBar = document.getElementById("progressBar");
+            const progressText = document.getElementById("progressText");
+
+            let annotatedCount = 0;
+            let totalCount = 0;
+
+            episodes.forEach((episode, episodeIndex) => {
+                episode.forEach((_, stepIndex) => {
+                    if (annotatedSteps[episodeIndex][stepIndex]) {
+                        annotatedCount++;
+                    }
+                    totalCount++;
+                });
+            });
+
+            let progressPercent = (annotatedCount / totalSteps) * 100;
+
+            progressBar.value = progressPercent;
+            progressText.textContent = `${Math.round(progressPercent)}% (${annotatedCount}/${totalSteps} steps)`;
         }
 
         async function loadSavedAnnotations() {
@@ -407,6 +482,22 @@
                 if (response.ok) {
                     const savedData = await response.json();
                     imageData = savedData;
+
+                    // Update annotated steps from saved data
+                    for (const episodeIndex in imageData) {
+                        if (imageData.hasOwnProperty(episodeIndex)) {
+                            for (const stepIndex in imageData[episodeIndex]) {
+                                if (imageData[episodeIndex].hasOwnProperty(stepIndex)) {
+                                    let data = imageData[episodeIndex][stepIndex];
+                                    if (data.task_correctness && data.eval_correctness) {
+                                        annotatedSteps[episodeIndex][stepIndex] = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    updateProgress(); // Update progress bar after loading annotations
                 } else {
                     console.log('No annotations file found, starting fresh.');
                 }
@@ -417,6 +508,7 @@
 
         function updateEpisodeInfo(episodeIndex, stepIndex) {
             document.getElementById("episodeInfo").textContent = `Episode ${episodeIndex + 1}, Step ${stepIndex + 1} out of ${episodes[episodeIndex].length}`;
+            updateProgress(); // Update progress bar on episode info change
         }
 
         function loadImage(episodeIndex, stepIndex) {
@@ -497,15 +589,31 @@
                 task_remarks: taskRemarks,
                 eval_remarks: evalRemarks,
             };
-
             if (!imageData[episodeIndex]) {
                 imageData[episodeIndex] = {};
             }
             imageData[episodeIndex][stepIndex] = data;
+            if (taskCorrectness && evalCorrectness) {
+                annotatedSteps[episodeIndex][stepIndex] = true; // Mark this step as annotated
+            }
+            updateProgress(); // Update progress bar after saving data
         }
 
-        async function saveImageDataToJSON() {
+        async function saveImageDataToJSON(showAlert = true) {
             saveData(currentEpisodeIndex, currentStepIndex);
+            // go over image data and remove steps where both task_correctness and eval_correctness are not set
+            for (const episodeIndex in imageData) {
+                if (imageData.hasOwnProperty(episodeIndex)) {
+                    for (const stepIndex in imageData[episodeIndex]) {
+                        if (imageData[episodeIndex].hasOwnProperty(stepIndex)) {
+                            let data = imageData[episodeIndex][stepIndex];
+                            if (!data.task_correctness && !data.eval_correctness) {
+                                delete imageData[episodeIndex][stepIndex];
+                            }
+                        }
+                    }
+                }
+            }
             let jsonData = JSON.stringify(imageData, null, 2);
 
             try {
@@ -521,9 +629,17 @@
                     throw new Error('Failed to save annotations');
                 }
 
-                alert('Annotations saved successfully');
+                if (showAlert) {
+                    alert('Annotations saved successfully');
+                }
+                else {
+                    console.log('Autosave triggered. Saved annotations.')
+                }
             } catch (error) {
                 console.error('Error saving annotations:', error);
+                if (showAlert) {
+                    alert('Failed to save annotations');
+                }
             }
         }
 
@@ -547,15 +663,71 @@
             document.querySelector('.box').scrollTop = 0;
         }
 
+        function skipToNextStep() {
+            let found = false;
+
+            // Iterate over all episodes and steps to find the next step to annotate
+            for (let episodeIndex = currentEpisodeIndex; episodeIndex < episodes.length; episodeIndex++) {
+                let startStep = (episodeIndex === currentEpisodeIndex) ? currentStepIndex + 1 : 0;
+                for (let stepIndex = startStep; stepIndex < episodes[episodeIndex].length; stepIndex++) {
+                    let data = imageData[episodeIndex] && imageData[episodeIndex][stepIndex];
+                    if (!data || (!data.task_correctness && !data.eval_correctness)) {
+                        loadImage(episodeIndex, stepIndex);
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+
+            // If no more steps found in the current episode, move to the next episode
+            if (!found) {
+                for (let episodeIndex = currentEpisodeIndex + 1; episodeIndex < episodes.length; episodeIndex++) {
+                    for (let stepIndex = 0; stepIndex < episodes[episodeIndex].length; stepIndex++) {
+                        let data = imageData[episodeIndex] && imageData[episodeIndex][stepIndex];
+                        if (!data || (!data.task_correctness && !data.eval_correctness)) {
+                            loadImage(episodeIndex, stepIndex);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) break;
+                }
+            }
+
+            if (!found) {
+                alert("All steps are fully annotated.");
+            }
+        }
+        function startAutosave() {
+            // Save data every 1 minute (600000 milliseconds)
+            autosaveInterval = setInterval(async () => {
+                await saveImageDataToJSON(false);
+            }, 60000);
+        }
+
+        function stopAutosave() {
+            if (autosaveInterval) {
+                clearInterval(autosaveInterval);
+            }
+        }
+
         document.getElementById("prevBtn").addEventListener("click", prevImage);
         document.getElementById("nextBtn").addEventListener("click", nextImage);
-        document.getElementById("saveBtn").addEventListener("click", saveImageDataToJSON);
         document.getElementById("goToEpisodeBtn").addEventListener("click", goToEpisode);
-
+        document.getElementById("skipToNextBtn").addEventListener("click", skipToNextStep);
+        document.getElementById("saveBtn").addEventListener("click", function () {
+            saveImageDataToJSON(true); // Show alert on explicit save
+        });
         window.onload = function () {
             loadJSONData();
+            startAutosave();
+        };
+        window.onbeforeunload = function () {
+            stopAutosave();
         };
     </script>
+
 </body>
 
 </html>
