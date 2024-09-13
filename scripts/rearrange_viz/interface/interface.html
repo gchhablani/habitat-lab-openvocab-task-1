@@ -250,67 +250,6 @@
         <div class="image-container">
             <img id="currentImage" src="" alt="Image" class="image">
         </div>
-
-        <!-- <div class="field">
-            <div class="control">
-                <label class="label remarks-label">Remarks:</label>
-                
-                <div class="scrollable-options">
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Task: Hallucination"> <span class="checkmark"></span> Task: Hallucination
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Task: Already satisfied"> <span class="checkmark"></span> Task: Already satisfied
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Task: Numerical entity IDs"> <span class="checkmark"></span> Task: Numerical entity IDs
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Task: Unresolvable ambiguity"> <span class="checkmark"></span> Task: Unresolvable ambiguity
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Task: Other"> <span class="checkmark"></span> Task: Other
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Evaluation: Furniture should have been room">
-                        <span class="checkmark"></span>
-                        Evaluation:
-                        Furniture should have been room
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Evaluation: Incorrect object/room/furniture">
-                        <span class="checkmark"></span>
-                        Evaluation:
-                        Incorrect object/room/furniture
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Evaluation: Missing relation"> <span class="checkmark"></span> Evaluation:
-                        Missing
-                        relation
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Evaluation: Incorrect relation type"> <span class="checkmark"></span> Evaluation:
-                        Incorrect
-                        relation type
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Evaluation: Incorrect temporal"> <span class="checkmark"></span>  Evaluation:
-                        Incorrect
-                        temporal
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]"
-                            value="Evaluation: Missing same/different arg constraint">
-                            <span class="checkmark"></span>
-                        Evaluation: Missing same/different arg constraint
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="remarks[]" value="Evaluation: Other"> <span class="checkmark"></span> Evaluation: Other
-                    </label>
-                </div>
-            </div>
-        </div> -->
-
         <div class="field">
             <div class="control">
                 <div class="columns">
@@ -456,7 +395,24 @@
                 episodes.push(steps);
             });
 
+            // Load saved annotations
+            await loadSavedAnnotations();
+
             loadImage(currentEpisodeIndex, currentStepIndex); // Load the first image once JSON is loaded
+        }
+
+        async function loadSavedAnnotations() {
+            try {
+                const response = await fetch('./annotations.json');
+                if (response.ok) {
+                    const savedData = await response.json();
+                    imageData = savedData;
+                } else {
+                    console.log('No annotations file found, starting fresh.');
+                }
+            } catch (error) {
+                console.log('No annotations file found, starting fresh.');
+            }
         }
 
         function updateEpisodeInfo(episodeIndex, stepIndex) {
@@ -548,16 +504,27 @@
             imageData[episodeIndex][stepIndex] = data;
         }
 
-        function saveImageDataToJSON() {
+        async function saveImageDataToJSON() {
             saveData(currentEpisodeIndex, currentStepIndex);
             let jsonData = JSON.stringify(imageData, null, 2);
-            let blob = new Blob([jsonData], { type: 'application/json' });
-            let link = document.createElement("a");
-            link.href = window.URL.createObjectURL(blob);
-            link.download = "annotations.json";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+
+            try {
+                const response = await fetch('/save_annotations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: jsonData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save annotations');
+                }
+
+                alert('Annotations saved successfully');
+            } catch (error) {
+                console.error('Error saving annotations:', error);
+            }
         }
 
         function prevImage() {
