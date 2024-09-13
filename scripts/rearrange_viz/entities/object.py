@@ -64,16 +64,25 @@ class Object:
         ax.add_artist(line)
 
     def set_icons(self):
-        img = Image.open("object_states/object_dirty.png").convert("RGBA")
+        # img = Image.open("object_states/object_dirty.png").convert("RGBA")
+        # resized_img = resize_icon_height(img, self.config.height)
+        # img_array = np.array(resized_img)
+        # self.dirty_icon = img_array
+        
+        img = Image.open("object_states/object_clean.png").convert("RGBA")
         resized_img = resize_icon_height(img, self.config.height)
         img_array = np.array(resized_img)
-        self.dirty_icon = img_array
+        self.clean_icon = img_array
+        
+        img = Image.open("object_states/object_clean_plus_on.png").convert("RGBA")
+        resized_img = resize_icon_height(img, self.config.height)
+        img_array = np.array(resized_img)
+        self.clean_plus_on_icon = img_array
 
         img = Image.open("object_states/object_on.png").convert("RGBA")
         resized_img = resize_icon_height(img, self.config.height)
         img_array = np.array(resized_img)
         self.powered_on_icon = img_array
-
 
         img = Image.open("object_states/refresh.png").convert("RGBA")
         resized_img = resize_icon_height(img, self.config.height)
@@ -126,9 +135,19 @@ class Object:
             )
             self.previous_states = self.states.copy()
 
-        if 'is_clean' in self.states and not self.states['is_clean']:
+        if 'is_clean' in self.states and self.states['is_clean'] and 'is_powered_on' in self.states and self.states['is_powered_on']:
             ax.imshow(
-                self.dirty_icon,
+                self.clean_plus_on_icon,
+                extent=[
+                    origin[0] - 1 * self.config.width,
+                    origin[0] + 2 * self.config.width,
+                    origin[1] - 1 * self.config.height,
+                    origin[1] + 2 * self.config.height,
+                ],
+            )
+        elif 'is_clean' in self.states and self.states['is_clean']:
+            ax.imshow(
+                self.clean_icon,
                 extent=[
                     origin[0] - 1 * self.config.width,
                     origin[0] + 2 * self.config.width,
@@ -136,8 +155,7 @@ class Object:
                     origin[1] + 2 * self.config.height,
                 ],
             )
-
-        if 'is_powered_on' in self.states and self.states['is_powered_on']:
+        elif 'is_powered_on' in self.states and self.states['is_powered_on']:
             ax.imshow(
                 self.powered_on_icon,
                 extent=[
@@ -198,7 +216,8 @@ class Object:
             self.plot_on_floor_line(ax)
 
         color = get_object_color(self.object_id)
-        self.dirty_icon[self.dirty_icon[:, :, 3] != 0, :3] = self.hex_to_rgb(color)
+        self.clean_icon[self.clean_icon[:, :, 3] != 0, :3] = self.hex_to_rgb(color)
+        self.clean_plus_on_icon[self.clean_plus_on_icon[:, :, 3] != 0, :3] = self.hex_to_rgb(color)
         self.powered_on_icon[self.powered_on_icon[:, :, 3] != 0, :3] = self.hex_to_rgb(color)
         self.refresh_icon[self.refresh_icon[:, :, 3] != 0, :3] = self.hex_to_rgb("#FFFFFF")
         self.plot_state_attributes(ax, origin)
