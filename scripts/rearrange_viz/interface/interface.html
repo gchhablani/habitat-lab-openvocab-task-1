@@ -22,132 +22,78 @@
             height: 100vh;
             background-color: #3E4C60;
             color: white;
-            padding: 20px;
+            padding: 1%;
             box-shadow: none;
             overflow: auto;
         }
 
         .image-container {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 2%;
         }
 
         .image {
             max-width: 100%;
         }
 
-        .input.comments {
-            font-size: 1vw;
-            color: white;
-            width: 100%;
-            background-color: #2F3743;
-            margin: 0 auto;
-            border-width: 0px;
-        }
-
-        .button-container {
-            text-align: center;
-            margin-top: 0.5vh;
-        }
-
         .button,
         .button.is-large {
-            font-size: 1.5vw;
+            font-size: 1vw;
             color: white;
         }
 
+        /* Correct/Incorrect Buttons */
         input[type="radio"] {
             display: none;
         }
 
-        .label {
-            color: white;
+        .correctness-radio-buttons {
+            display: flex;
+            justify-content: space-between;
+            /* Even spacing */
+            align-items: center;
+            gap: 0vw;
+            /* Add space between buttons */
+            padding: 0.5vw 0.5vw;
+            /* Add padding to center the buttons */
         }
 
-        .label.radio {
+        .radio-label {
             color: #2F3743;
             background-color: white;
-            display: inline-block;
-            padding: 0.25vw 1vw;
-            margin: 0vw;
-            border: 2px solid #ccc;
-            border-radius: 0.5vw;
-            cursor: pointer;
-            font-size: 1.5vw;
-            width: 17vw;
-            text-align: center;
-        }
-
-        #goToEpisodeBtn,
-        #skipToNextBtn {
-            color: #2F3743;
-            background-color: white;
-            display: inline-block;
-            padding: 0vw 0vw;
-            border: 2px solid #ccc;
-            border-radius: 0.5vw;
+            border: 0px solid #ccc;
+            border-radius: 0.2vw;
             cursor: pointer;
             font-size: 1vw;
-            width: 5vw;
+            width: 49%;
+            font-weight: bold;
             text-align: center;
         }
 
-        input[type="radio"]:checked+.label.radio {
-            background-color: #81f7ff;
+        .span-radio {
+            display: block;
+            padding: 0.25vw 0.5vw;
+            border-radius: 0.2vw;
+            width: 100%;
+        }
+
+        input[type="radio"]:checked+.span-radio {
+            background-color: rgb(148, 202, 255);
             color: #2F3743;
         }
 
-        .label.radio:hover {
+        .radio-label:hover {
             background-color: #4a90e2;
             color: #2F3743;
         }
 
-        #episodeInput {
-            font-size: 1vw;
-            color: white;
-            width: 10%;
-            background-color: #2F3743;
-            margin: 0 auto;
-            border-width: 0px;
-        }
-
-        .control {
-            text-align: center;
-        }
-
-        .nav-text,
-        .pipe {
-            font-size: 1.5vw;
-            cursor: pointer;
-        }
-
-        .nav-text:hover {
-            color: #3273dc;
-        }
-
-        .pipe {
-            margin: 0 0.5vw;
-        }
-
-        .label.comments-label,
-        .label.remarks-label,
-        .label.task-correctness-label,
-        .label.eval-correctness-label {
+        .remarks-label,
+        .task-correctness-label,
+        .eval-correctness-label {
             margin-top: 1vw;
-            font-size: 1.5vw;
-            color: white;
-        }
-
-        #prevBtn,
-        #nextBtn,
-        #saveBtn {
-            font-size: 1.5vw;
-        }
-
-        .episode-info {
-            color: white;
-            text-align: center;
             font-size: 1vw;
+            font-weight: bold;
+            color: white;
         }
 
         .scrollable-options {
@@ -161,17 +107,18 @@
             background-color: #2F3743;
             width: 100%;
             text-align: left;
-            margin: 0 auto;
+            margin-top: 1vw;
+            margin-bottom: 1vw;
             font-size: 1vw;
         }
 
         .checkbox {
             display: block;
             position: relative;
-            margin-bottom: 1vw;
+            margin-bottom: 0.5vw;
             padding-left: 2vw;
             cursor: pointer;
-            font-size: 1.25vw;
+            font-size: 1vw;
             user-select: none;
         }
 
@@ -188,8 +135,8 @@
             position: absolute;
             top: 0;
             left: 0;
-            height: 1.5vw;
-            width: 1.5vw;
+            height: 1vw;
+            width: 1vw;
             background-color: #eee;
             border-radius: 0.25vw;
         }
@@ -218,10 +165,10 @@
 
         /* Style the checkmark/indicator */
         .checkbox .checkmark:after {
-            left: 0.5vw;
-            top: 0.2vw;
-            width: 0.5vw;
-            height: 1vw;
+            left: 0.35vw;
+            top: 0.15vw;
+            width: 0.35vw;
+            height: 0.67vw;
             border: solid #2F3743;
             border-width: 0 0.25vw 0.25vw 0;
             transform: rotate(45deg);
@@ -231,191 +178,307 @@
             color: #3273dc;
         }
 
+        /* Input field */
         .field {
-            width: 80%;
+            width: 90%;
             text-align: center;
             margin: 0 auto;
         }
 
-        #progressContainer {
-            width: 100%;
-            max-width: 75vw;
-            margin: 0.1vh auto;
+        /* Episode Info Main (Top)*/
+        #episodeInfoMain {
+            font-size: 1.2vw;
+            text-align: center;
+            font-weight: bold;
+            margin: 0.5vw 0;
+            color: #ccc;
+        }
+
+        /* Episode Info */
+        #episodeInfo {
+            font-size: 1vw;
+            text-align: center;
+            font-weight: bold;
+            margin: 1vw 0;
+            color: #ccc;
+        }
+
+        /* Nav buttons */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            /* Even spacing */
+            align-items: center;
+            gap: 0vw;
+            /* Add space between buttons */
+            padding: 0.5vw 0.5vw;
+            /* Add padding to center the buttons */
+        }
+
+        .button-nav {
+            color: #2F3743;
+            background-color: white;
+            padding: 0.5vw 1vw;
+            border: 0px solid #ccc;
+            border-radius: 0.2vw;
+            cursor: pointer;
+            font-size: 1vw;
+            font-weight: bold;
+            text-align: center;
+            width: 49%;
+        }
+
+        .button-nav:hover {
+            background-color: #4a90e2;
+            color: #2F3743;
+        }
+
+        /* Auxiliary Nav buttons */
+        .nav-buttons-aux {
+            display: flex;
+            justify-content: space-between;
+            /* Even spacing */
+            align-items: center;
+            gap: 0.2vw;
+            /* Add space between buttons */
+            padding: 0.5vw 0.5vw;
+            /* Add padding to center the buttons */
+        }
+
+        .go-to-container {
+            display: flex;
+            align-items: center;
+            gap: 0.0vw;
+            /* Spacing between the Go To button and input */
+        }
+
+        .button-nav-aux {
+            color: white;
+            background-color: #5A6978;
+            padding: 0.5vw 0.5vw;
+            /* Larger padding for uniform button size */
+            border: 0px solid #ccc;
+            border-radius: 0.2vw;
+            cursor: pointer;
+            font-size: 0.8vw;
+            font-weight: bold;
             text-align: center;
         }
 
-        #progressBar {
-            width: 100%;
-            height: 2vh;
+        .button-nav-aux:hover {
+            background-color: #4a90e2;
+            color: #2F3743;
         }
 
-        #progressText {
-            margin-top: 0.1vh;
-            font-size: 1.5vw;
+        #episodeInput {
+            font-size: 0.8vw;
+            color: white;
+            width: 5vw;
+            /* Adjust width to fit with the buttons */
+            background-color: #2F3743;
+            border: 0px;
+            padding: 0.5vw;
         }
 
-        #episodeInfo {
+        .instruction-text {
             font-size: 1.5vw;
+            font-weight: bold;
+            text-align: center;
+            margin: 0.5vw auto;
+            width: 70%;
+        }
+
+        .other-comment-input {
+            background-color: #5A6978;
+            color: white;
+            font-size: 1vw;
+            width: 90%;
+            border: 0px;
+            border-radius: 0.2vw;
+            padding: 0.75vh 1vw;
+        }
+
+        .other-comment-input::placeholder {
+            color: white;
+            /* Change this to your desired placeholder color */
+        }
+
+        #keyBoardShortcuts {
+            font-size: 1vw;
+            font-weight: bold;
+            color: white;
+            background-color: #5A6978;
+            text-align: left;
+            padding: 1vw 4vw;
+            margin: 1vw auto;
         }
     </style>
 </head>
 
 <body>
     <div class="box">
-        <div class="button-container columns is-mobile">
-            <div class="column is-half is-offset-one-quarter">
-                <button id="goToEpisodeBtn" class="button">Go To</button>
-                <input type="number" id="episodeInput" class="input" placeholder="Episode Number">
-            </div>
+        <div class="instruction-text">
+            <p id="instructionText"></p>
         </div>
-        <div class="button-container columns is-mobile">
-            <div class="column is-half is-offset-one-quarter">
-                <button id="skipToNextBtn" class="button">Skip</button>
-            </div>
+        <div class="episode-info-main">
+            <p id="episodeInfoMain"></p>
         </div>
+
         <div class="columns is-mobile">
-            <div class="column is-half is-offset-one-quarter" id="progressContainer">
-                <progress id="progressBar" value="0" max="100"></progress>
-                <div id="progressText">0%</div>
-            </div>
-        </div>
-        <p id="episodeInfo" class="episode-info"></p>
-        <div class="image-container">
-            <img id="currentImage" src="" alt="Image" class="image">
-        </div>
-        <div class="field">
-            <div class="control">
-                <div class="columns">
-                    <!-- Task buttons column -->
-                    <div class="column is-half">
-                        <label class="label task-correctness-label">Task:</label>
-                        <label class="radio">
-                            <input type="radio" name="task_correctness" value="no">
-                            <span class="label radio">Incorrect</span>
-                        </label>
-                        <label class="radio">
-                            <input type="radio" name="task_correctness" value="yes">
-                            <span class="label radio">Correct</span>
-                        </label>
-
-                        <label class="label remarks-label">Remarks:</label>
-
-                        <div class="scrollable-options">
-                            <label class="checkbox">
-                                <input type="checkbox" name="task_remarks[]" value="Hallucination"> <span
-                                    class="checkmark"></span>
-                                Hallucination
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="task_remarks[]" value="Already satisfied"> <span
-                                    class="checkmark"></span>
-                                Already satisfied
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="task_remarks[]" value="Unresolvable ambiguity"> <span
-                                    class="checkmark"></span>
-                                Unresolvable ambiguity
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="task_remarks[]" value="Contradiction"> <span
-                                    class="checkmark"></span>
-                                Contradiction
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="task_remarks[]" value="Other"> <span
-                                    class="checkmark"></span> Other
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Evaluation function buttons column -->
-                    <div class="column is-half">
-                        <label class="label eval-correctness-label">Evaluation Function:</label>
-                        <label class="radio">
-                            <input type="radio" name="eval_correctness" value="no">
-                            <span class="label radio">Incorrect</span>
-                        </label>
-                        <label class="radio">
-                            <input type="radio" name="eval_correctness" value="yes">
-                            <span class="label radio">Correct</span>
-                        </label>
-                        <label class="label remarks-label">Remarks:</label>
-                        <div class="scrollable-options">
-                            <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]" value="Missing placement relation">
-                                <span class="checkmark"></span>
-                                Missing placement relation
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]"
-                                    value="Incorrect relation (furniture should have been room)">
-                                <span class="checkmark"></span>
-                                Incorrect relation (furniture should have been room)
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]" value="Incorrect relation (other)">
-                                <span class="checkmark"></span>
-                                Incorrect relation (other)
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]" value="Incorrect ambiguity">
-                                <span class="checkmark"></span>
-                                Incorrect ambiguity
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]" value="Incorrect object/furniture/room">
-                                <span class="checkmark"></span>
-                                Incorrect object/furniture/room
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]"
-                                    value="Incorrect/missing &quot;next-to&quot;">
-                                <span class="checkmark"></span>
-                                Incorrect/missing "next-to"
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]"
-                                    value="Incorrect/missing same/different constraint">
-                                <span class="checkmark"></span>
-                                Incorrect/missing same/different constraint
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]" value="Incorrect temporal grouping">
-                                <span class="checkmark"></span>
-                                Incorrect temporal grouping
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" name="eval_remarks[]" value="Other">
-                                <span class="checkmark"></span>
-                                Other
-                            </label>
-                        </div>
-                    </div>
+            <!--Image Column-->
+            <div class="column is-two-thirds">
+                <div class="image-container">
+                    <img id="currentImage" src="" alt="Image" class="image">
                 </div>
             </div>
-        </div>
+            <!--Input Fields Column-->
+            <div class="column is-one-third">
+                <div class="field">
 
-        <div class="field">
-            <div class="control">
-                <label class="label comments-label">Comments:</label>
-                <input type="text" id="comments" class="input comments">
-            </div>
-        </div>
+                    <!-- Task buttons column -->
+                    <label class="task-correctness-label">Task:</label>
+                    <div class="correctness-radio-buttons">
+                        <label class="radio-label">
+                            <input type="radio" name="task_correctness" id="task_correctness_no" value="no">
+                            <span class="span-radio">Incorrect</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="task_correctness" id="task_correctness_yes" value="yes">
+                            <span class="span-radio">Correct</span>
+                        </label>
+                    </div>
 
-        <div class="button-container columns is-mobile">
-            <div class="column is-half is-offset-one-quarter">
-                <span id="prevBtn" class="nav-text">
-                    < Prev</span>
-                        <span class="pipe">|</span>
-                        <span id="saveBtn" class="nav-text">Download Annotations</span>
-                        <span class="pipe">|</span>
-                        <span id="nextBtn" class="nav-text">Next ></span>
+
+                    <label class="remarks-label">Remarks:</label>
+
+                    <div class="scrollable-options">
+                        <label class="checkbox">
+                            <input type="checkbox" name="task_remarks[]" value="Hallucination"> <span
+                                class="checkmark"></span>
+                            Hallucination
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="task_remarks[]" value="Already satisfied"> <span
+                                class="checkmark"></span>
+                            Already satisfied
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="task_remarks[]" value="Unresolvable ambiguity"> <span
+                                class="checkmark"></span>
+                            Unresolvable ambiguity
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="task_remarks[]" value="Contradiction"> <span
+                                class="checkmark"></span>
+                            Contradiction
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="task_remarks[]" value="Other"
+                                onchange="toggleOtherInput(this, 'task')"> <span class="checkmark"></span> Other
+                        </label>
+                        <input type="text" name="task_other_comment" class="other-comment-input"
+                            placeholder="Please specify..." style="display:none;" />
+                    </div>
+
+                    <!-- Evaluation function buttons -->
+
+                    <label class="eval-correctness-label">Evaluation Function:</label>
+                    <div class="correctness-radio-buttons">
+                        <label class="radio-label">
+                            <input type="radio" name="eval_correctness" value="no">
+                            <span class="span-radio">Incorrect</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="eval_correctness" value="yes">
+                            <span class="span-radio">Correct</span>
+                        </label>
+                    </div>
+
+                    <label class="remarks-label">Remarks:</label>
+                    <div class="scrollable-options">
+                        <label class="checkbox">
+                            <input type="checkbox" name="eval_remarks[]" value="Missing placement relation">
+                            <span class="checkmark"></span>
+                            Missing placement relation
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="eval_remarks[]"
+                                value="Incorrect relation (furniture should have been room)">
+                            <span class="checkmark"></span>
+                            Incorrect relation (furniture should have been room)
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="eval_remarks[]" value="Incorrect relation (other)">
+                            <span class="checkmark"></span>
+                            Incorrect relation (other)
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="eval_remarks[]" value="Incorrect ambiguity">
+                            <span class="checkmark"></span>
+                            Incorrect ambiguity
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="eval_remarks[]" value="Incorrect object/furniture/room">
+                            <span class="checkmark"></span>
+                            Incorrect object/furniture/room
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="eval_remarks[]" value="Incorrect/missing &quot;next-to&quot;">
+                            <span class="checkmark"></span>
+                            Incorrect/missing "next-to"
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="eval_remarks[]"
+                                value="Incorrect/missing same/different constraint">
+                            <span class="checkmark"></span>
+                            Incorrect/missing same/different constraint
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="eval_remarks[]" value="Incorrect temporal grouping">
+                            <span class="checkmark"></span>
+                            Incorrect temporal grouping
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="eval_remarks[]" value="Other"
+                                onchange="toggleOtherInput(this, 'eval')">
+                            <span class="checkmark"></span>
+                            Other
+                        </label>
+                        <input type="text" name="eval_other_comment" class="other-comment-input"
+                            placeholder="Please specify..." style="display:none;" />
+                    </div>
+
+                    <!-- Episode Information Paragraph (step x of y thing)-->
+                    <p id="episodeInfo"></p>
+                    <div class="nav-buttons-aux">
+                        <div class="go-to-container">
+                            <!-- Go To Button -->
+                            <button id="goToEpisodeBtn" class="button-nav-aux">Go To Episode</button>
+                            <input type="number" id="episodeInput" class="input" placeholder="Episode Number">
+                        </div>
+                        <!-- Save Button -->
+                        <button id="saveBtn" class="button-nav-aux">Save Now</button>
+                        <!-- Skip Button -->
+                        <button id="skipToNextBtn" class="button-nav-aux">Next Empty Step</button>
+                    </div>
+                    <div class="nav-buttons">
+                        <button id="prevBtn" class="button-nav">Previous</button>
+                        <button id="nextBtn" class="button-nav">Next</button>
+                    </div>
+                    <p id="keyBoardShortcuts">
+                        <b>Keyboard Shortcuts:</b><br>
+                        <strong>&larr;</strong> Previous Step<br>
+                        <strong>&rarr;</strong> Next Image<br>
+                        <strong>&darr;</strong> Save Now
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         let episodes = [];
+        let instructions = [];
         let imageData = {};
         let currentEpisodeIndex = 0;
         let currentStepIndex = 0;
@@ -432,12 +495,12 @@
                 for (let step in episode.viz_paths) {
                     steps.push(episode.viz_paths[step]);
                 }
+                instructions.push(episode.instruction);
                 episodes.push(steps);
             });
 
             totalSteps = episodes.flat().length; // Calculate the total number of steps
             initializeAnnotatedSteps(); // Initialize annotated steps
-            updateProgress(); // Initialize progress bar
 
             // Load saved annotations
             await loadSavedAnnotations();
@@ -454,27 +517,6 @@
             });
         }
 
-        function updateProgress() {
-            const progressBar = document.getElementById("progressBar");
-            const progressText = document.getElementById("progressText");
-
-            let annotatedCount = 0;
-            let totalCount = 0;
-
-            episodes.forEach((episode, episodeIndex) => {
-                episode.forEach((_, stepIndex) => {
-                    if (annotatedSteps[episodeIndex][stepIndex]) {
-                        annotatedCount++;
-                    }
-                    totalCount++;
-                });
-            });
-
-            let progressPercent = (annotatedCount / totalSteps) * 100;
-
-            progressBar.value = progressPercent;
-            progressText.textContent = `${Math.round(progressPercent)}% (${annotatedCount}/${totalSteps} steps)`;
-        }
 
         async function loadSavedAnnotations() {
             try {
@@ -496,8 +538,6 @@
                             }
                         }
                     }
-
-                    updateProgress(); // Update progress bar after loading annotations
                 } else {
                     console.log('No annotations file found, starting fresh.');
                 }
@@ -507,8 +547,12 @@
         }
 
         function updateEpisodeInfo(episodeIndex, stepIndex) {
-            document.getElementById("episodeInfo").textContent = `Episode ${episodeIndex + 1}, Step ${stepIndex + 1} out of ${episodes[episodeIndex].length}`;
-            updateProgress(); // Update progress bar on episode info change
+            document.getElementById("episodeInfo").textContent = `Episode ${episodeIndex + 1}/${episodes.length} • Step ${stepIndex + 1}/${episodes[episodeIndex].length}`;
+            document.getElementById("episodeInfoMain").textContent = `${stepIndex + 1}/${episodes[episodeIndex].length}`;
+        }
+
+        function updateInstructionText(episodeIndex) {
+            document.getElementById("instructionText").textContent = instructions[episodeIndex];
         }
 
         function loadImage(episodeIndex, stepIndex) {
@@ -517,6 +561,7 @@
             currentStepIndex = stepIndex;
             updateInputFields(currentEpisodeIndex, currentStepIndex);
             updateEpisodeInfo(currentEpisodeIndex, currentStepIndex);
+            updateInstructionText(currentEpisodeIndex);
         }
 
         function goToEpisode() {
@@ -537,8 +582,6 @@
 
         function updateInputFields(episodeIndex, stepIndex) {
             let data = (imageData[episodeIndex] && imageData[episodeIndex][stepIndex]) || {};
-            document.getElementById("comments").value = data.comments || "";
-
             let taskCorrectnessValue = data.task_correctness || "";
             let taskRadioButtons = document.querySelectorAll('input[name="task_correctness"]');
             taskRadioButtons.forEach(button => {
@@ -570,20 +613,47 @@
             evalRemarkCheckboxes.forEach(checkbox => {
                 checkbox.checked = evalRemarks.includes(checkbox.value);
             });
+
+            if (taskRemarks.some(remark => typeof remark === 'object' && remark.comment)) {
+                document.querySelector('input[name="task_other_comment"]').value = taskRemarks.find(remark => typeof remark === 'object').comment;
+                document.querySelector('input[name="task_other_comment"]').style.display = "block";
+            }
+            else {
+                document.querySelector('input[name="task_other_comment"]').value = "";
+                document.querySelector('input[name="task_other_comment"]').style.display = "none";
+            }
+
+            if (evalRemarks.some(remark => typeof remark === 'object' && remark.comment)) {
+                document.querySelector('input[name="eval_other_comment"]').value = evalRemarks.find(remark => typeof remark === 'object').comment;
+                document.querySelector('input[name="eval_other_comment"]').style.display = "block";
+            }
+            else {
+                document.querySelector('input[name="eval_other_comment"]').value = "";
+                document.querySelector('input[name="eval_other_comment"]').style.display = "none";
+            }
+
         }
 
         function saveData(episodeIndex, stepIndex) {
-            let commentsValue = document.getElementById("comments").value;
             let taskCorrectness = document.querySelector('input[name="task_correctness"]:checked')?.value;
             let evalCorrectness = document.querySelector('input[name="eval_correctness"]:checked')?.value;
             let taskRemarks = Array.from(document.querySelectorAll('input[name="task_remarks[]"]:checked')).map(checkbox => checkbox.value);
             let evalRemarks = Array.from(document.querySelectorAll('input[name="eval_remarks[]"]:checked')).map(checkbox => checkbox.value);
 
+            let taskOtherComment = document.querySelector('input[name="task_other_comment"]').value;
+            if (taskRemarks.includes("Other") && taskOtherComment) {
+                taskRemarks.push({ "comment": taskOtherComment });
+            }
+
+            let evalOtherComment = document.querySelector('input[name="eval_other_comment"]').value;
+            if (evalRemarks.includes("Other") && evalOtherComment) {
+                evalRemarks.push({ "comment": evalOtherComment });
+            }
+
             let data = {
                 episode: episodeIndex,
                 step: stepIndex,
                 image: episodes[episodeIndex][stepIndex],
-                comments: commentsValue,
                 task_correctness: taskCorrectness,
                 eval_correctness: evalCorrectness,
                 task_remarks: taskRemarks,
@@ -596,7 +666,6 @@
             if (taskCorrectness && evalCorrectness) {
                 annotatedSteps[episodeIndex][stepIndex] = true; // Mark this step as annotated
             }
-            updateProgress(); // Update progress bar after saving data
         }
 
         async function saveImageDataToJSON(showAlert = true) {
@@ -712,6 +781,16 @@
             }
         }
 
+        function toggleOtherInput(checkbox, type) {
+            let inputField = document.querySelector(`input[name="${type}_other_comment"]`);
+            if (checkbox.checked) {
+                inputField.style.display = "block"; // Show the input field
+            } else {
+                inputField.style.display = "none";  // Hide the input field
+                inputField.value = "";  // Clear the input field
+            }
+        }
+
         document.getElementById("prevBtn").addEventListener("click", prevImage);
         document.getElementById("nextBtn").addEventListener("click", nextImage);
         document.getElementById("goToEpisodeBtn").addEventListener("click", goToEpisode);
@@ -722,6 +801,21 @@
         window.onload = function () {
             loadJSONData();
             startAutosave();
+
+            // Event listener for arrow key navigation
+            document.addEventListener("keydown", function (event) {
+                if (event.keyCode === 37) {
+                    // Left arrow key pressed
+                    prevImage();
+                } else if (event.keyCode === 39) {
+                    // Right arrow key pressed
+                    nextImage();
+                }
+                else if (event.keyCode === 40) {
+                    // Down arrow key pressed
+                    saveImageDataToJSON(true);
+                }
+            });
         };
         window.onbeforeunload = function () {
             stopAutosave();

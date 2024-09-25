@@ -233,8 +233,40 @@ class Scene:
                     fontsize=self.config.arrow.label_fontsize,
                     bbox=dict(boxstyle='circle,pad=0.3', facecolor=color, linewidth=0)
                 )
+    def change_heights_for_receptacle_states(self, current_rooms_to_plot):
+        states_to_plot_for_this_row = {
+            "is_clean": False,
+            "is_filled": False,
+            "is_powered_on": False,
+        }
+        for room in current_rooms_to_plot:
+            for receptacle in room.receptacles:
+                if "is_clean" in receptacle.states and receptacle.states["is_clean"] != receptacle.previous_states["is_clean"]:
+                    states_to_plot_for_this_row["is_clean"] = True
+                if "is_filled" in receptacle.states and receptacle.states["is_filled"] != receptacle.previous_states["is_filled"]:
+                    states_to_plot_for_this_row["is_filled"] = True
+                if "is_powered_on" in receptacle.states and receptacle.states["is_powered_on"] != receptacle.previous_states["is_powered_on"]:
+                    states_to_plot_for_this_row["is_powered_on"] = True
+
+        num_receptacle_state_lines = sum(
+            states_to_plot_for_this_row.values()
+        )
+
+        for room in current_rooms_to_plot:
+            room.num_receptacle_state_lines = num_receptacle_state_lines
+            room.init_heights() # reinitialize the heights
+            for receptacle in room.receptacles:
+                receptacle.previous_states = receptacle.states.copy()
+                if states_to_plot_for_this_row["is_clean"]:
+                    receptacle.plot_states["is_clean"] = True
+                if states_to_plot_for_this_row["is_filled"]:
+                    receptacle.plot_states["is_filled"] = True
+                if states_to_plot_for_this_row["is_powered_on"]:
+                    receptacle.plot_states["is_powered_on"] = True
 
     def plot_a_row_of_rooms(self, ax, current_rooms_to_plot, target_width, current_row_height):
+        # Check if there are any changes in any receptacle states in this row
+        self.change_heights_for_receptacle_states(current_rooms_to_plot)
         current_row_height -= max(
             room.height for room in current_rooms_to_plot
         )
@@ -402,6 +434,7 @@ class Scene:
         single_image=True,
         height_offset=0,
         all_mentioned_rooms=None,
+        show_time_step_box=False,
     ):
         self.process_state_changes(propositions)
 
@@ -414,9 +447,7 @@ class Scene:
         )
         
         self.plot_propositions(ax, propositions, height_offset)
-        if not single_image:
-            # Currently, support is only for non-single image because height_upper is always 0
-            # For single image, we need some added logic to get correct upper height
+        if not single_image and show_time_step_box:
             self.plot_time_step_box(ax, step_idx+1, height_upper)
         
         return ax, height_lower, height_upper

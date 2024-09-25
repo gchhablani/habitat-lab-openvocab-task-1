@@ -6,6 +6,12 @@ from .constants import receptacle_color_map, receptacle_properties
 from .placeholder import Placeholder
 from .utils import add_tint_to_rgb, resize_icon_height
 
+# DEFAULT_STATES = {
+#     "is_clean": False,
+#     "is_filled": False,
+#     "is_powered_on": False,
+# }
+
 def calculate_placeholder_heights(image):
     # This method uses the alpha values to calculate center and top height of the icon
     alpha = np.array(image)[:, :, 3]
@@ -36,13 +42,15 @@ class Receptacle:
         self.plot_center_placeholder = False
 
         self.next_top_item_position = None
-        
-        self.default_states = {
+
+        self.plot_states = {
             "is_clean": False,
             "is_filled": False,
             "is_powered_on": False,
         }
-        self.previous_states = self.default_states.copy()
+        # This initialization does not matter as we parse the states from the files
+        # and set both to the same value initially
+        self.previous_states = {}
         self.states = {}
 
         self.init_size()
@@ -101,16 +109,20 @@ class Receptacle:
         )
 
     def plot_state_attributes(self, ax, origin):
-        # Plot only if the state is different from the default state or the previous state
-        if self.states == self.previous_states:
-            return
+        # # Plot only if the state is different from the default state or the previous state
+        # if self.states == self.previous_states:
+        #     return
+        # NOTE: The current logic is to set whether to display a particular state or not outside of this class
+        # This is because we need control at the row level whether to display the state or not
+        # We also need to pre-decide the number of rows, and update the bottom pad accordingly.
 
         # Plot the attributes as a text
-        if "is_clean" in self.states:
+        plot_height = origin[1] - self.config.state_text_relative_height
+        if self.plot_states["is_clean"] and "is_clean" in self.states:
             if self.states["is_clean"]:
                 ax.text(
                     self.center_placeholder_position[0],
-                    origin[1] - self.config.state_text_relative_height,
+                    plot_height,
                     "clean",
                     ha="center",
                     va="center",
@@ -118,21 +130,23 @@ class Receptacle:
                     color="white",
                 )
             else:
+                # default is dirty
                 ax.text(
                     self.center_placeholder_position[0],
-                    origin[1] - self.config.state_text_relative_height,
+                    plot_height,
                     "dirty",
                     ha="center",
                     va="center",
                     fontsize=13,
                     color="black",
                 )
+            plot_height -= self.config.state_text_relative_height
 
-        if "is_filled" in self.states:
+        if self.plot_states["is_filled"] and "is_filled" in self.states:
             if self.states["is_filled"]:
                 ax.text(
                     self.center_placeholder_position[0],
-                    origin[1] - 2 * self.config.state_text_relative_height,
+                    plot_height,
                     "filled",
                     ha="center",
                     va="center",
@@ -140,21 +154,23 @@ class Receptacle:
                     color="white",
                 )
             else:
+                # default is empty
                 ax.text(
                     self.center_placeholder_position[0],
-                    origin[1] - 2 * self.config.state_text_relative_height,
+                    plot_height,
                     "empty",
                     ha="center",
                     va="center",
                     fontsize=13,
                     color="black",
                 )
+            plot_height -= self.config.state_text_relative_height
 
-        if "is_powered_on" in self.states:
+        if self.plot_states["is_powered_on"] and "is_powered_on" in self.states:
             if self.states["is_powered_on"]:
                 ax.text(
                     self.center_placeholder_position[0],
-                    origin[1] - 3 * self.config.state_text_relative_height,
+                    plot_height,
                     "on",
                     ha="center",
                     va="center",
@@ -162,9 +178,10 @@ class Receptacle:
                     color="white",
                 )
             else:
+                # default is off
                 ax.text(
                     self.center_placeholder_position[0],
-                    origin[1] - 3 * self.config.state_text_relative_height,
+                    plot_height,
                     "off",
                     ha="center",
                     va="center",

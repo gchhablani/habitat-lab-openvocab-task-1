@@ -191,6 +191,7 @@ def plot_scene(
         constraints,
         receptacle_icon_mapping,
         cropped_receptacle_icon_mapping,
+        show_instruction=config.show_instruction,
         single_image=single_image,
     )
     step_id_to_path_mapping = {}
@@ -202,7 +203,11 @@ def plot_scene(
 
         # Adjust only the current subplot
         plt.sca(ax)
-        plt.subplots_adjust(right=0.98, left=0.02, bottom=0.02, top=0.95)
+        if config.show_instruction:
+            plt.subplots_adjust(right=0.98, left=0.02, bottom=0.02, top=0.95)
+        else:
+            # tight
+            plt.subplots_adjust(right=0.99, left=0.01, bottom=0.01, top=0.99)
         if save_path:
             # Save each step as a separate image
             if not os.path.exists(save_path):

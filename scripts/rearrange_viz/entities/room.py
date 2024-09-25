@@ -31,6 +31,10 @@ class Room:
         # Initial object to receptacle mapping
         self.object_to_recep = object_to_recep
 
+        self.num_receptacle_state_lines = 0
+        # initialize the bottom pad with config bottom pad, but might change depending on the number of receptacle states
+        self.bottom_pad = self.config.bottom_pad
+
         if self.objects:
             self.use_full_height = True
         else:
@@ -67,9 +71,10 @@ class Room:
 
 
     def init_heights(self):
-        # print("#"*10)
-        # print(self.object_to_recep)
         # Init with min receptacle height
+        # Need to increase the bottom pad by the number of lines we are planning to plot for receptacle states
+        self.bottom_pad += self.config.per_receptacle_state_padding * self.num_receptacle_state_lines
+
         self.room_height = (
             self.config.min_height
         )
@@ -94,7 +99,7 @@ class Room:
                         current_receptacle.temp_mx_height += abs(obj.config.text_margin) + 2 * obj.config.height + obj.config.extra_space_between_objects
                         # We take max of all top item positions for now
                         self.room_height = max(self.room_height, current_receptacle.temp_mx_height)
-        self.room_height = self.room_height + self.config.bottom_pad + self.config.top_pad
+        self.room_height = self.room_height + self.bottom_pad + self.config.top_pad
         self.height = self.room_height + 2 * self.config.vertical_margin
         
     def init_size(self):
@@ -211,7 +216,7 @@ class Room:
         )
         for receptacle in self.receptacles:
             ax = receptacle.plot(
-                ax, origin=(offset, actual_origin[1] + self.config.bottom_pad)
+                ax, origin=(offset, actual_origin[1] + self.bottom_pad)
             )
             offset += receptacle.width + spacing
 
@@ -219,12 +224,12 @@ class Room:
         # Calculate text annotation position
         text_x = actual_origin[0] + self.room_width / 2
         text_y = (
-            actual_origin[1] + self.config.bottom_pad / 4
+            actual_origin[1] + self.bottom_pad / 4
         )  # Offset for lower v_pad region
 
         wrapped_text = wrap_text(self.room_id, self.config.max_chars_per_line)
 
-        text_y = actual_origin[1] + self.config.bottom_pad / 4 * 1 / (
+        text_y = actual_origin[1] + self.bottom_pad / 4 * 1 / (
             wrapped_text.count("\n") + 1
         )
         ax.annotate(
@@ -291,7 +296,7 @@ class Room:
         self.plot_objects(ax, actual_origin)
 
         # Plot the rectangle for the room
-        if not self.in_proposition:
+        if self.config.disable_in_proposition_room_border or not self.in_proposition:
             rect = ax.add_patch(
                 plt.Rectangle(
                     (actual_origin[0], actual_origin[1]),
