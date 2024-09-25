@@ -48,7 +48,7 @@ room:
   max_chars_per_line: 13
   min_width_per_object: 6
   disable_in_proposition_room_border: true
-  per_receptacle_state_padding: 75
+  per_receptacle_state_padding: 100
 
 scene:
   is_next_to:
