@@ -15,7 +15,7 @@ defaults:
     - soft_spl
     - distance_to_goal_reward
   - lab_sensors:
-    - objectgoal_sensor
+    - objectgoal_prompt_sensor
     - compass_sensor
     - gps_sensor
   - _self_
@@ -32,7 +32,7 @@ reward_measure: "distance_to_goal_reward"
 success_measure: "spl"
 
 
-goal_sensor_uuid: objectgoal
+goal_sensor_uuid: objectgoal_prompt
 
 measurements:
   distance_to_goal:
